@@ -112,14 +112,13 @@
 
     // ============================================================================
     // --- [File: src/components/Shared/VirtualJoystick.jsx] ---
-    // 虚拟触控双摇杆组件
     // ============================================================================
     const VirtualJoystick = ({ label, icon, children }) => {
       const [pos, setPos] = useState({ x: 0, y: 0 });
       const [isDragging, setIsDragging] = useState(false);
       const stickRef = useRef(null);
 
-      const maxRadius = 50; // 摇杆最大拖拽半径
+      const maxRadius = 50; 
 
       const updatePosition = (clientX, clientY) => {
         if (!stickRef.current) return;
@@ -151,7 +150,7 @@
 
       const handlePointerUp = (e) => {
         setIsDragging(false);
-        setPos({ x: 0, y: 0 }); // 松手回中
+        setPos({ x: 0, y: 0 }); 
         e.target.releasePointerCapture(e.pointerId);
       };
 
@@ -162,7 +161,6 @@
           </div>
           
           <div className="relative">
-            {/* 将 children 绝对定位到摇杆中心之下，用于渲染快捷键圆弧 */}
             {children && (
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
                 {children}
@@ -177,11 +175,9 @@
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
             >
-              {/* 十字基准线 */}
               <div className="absolute w-full h-[1px] bg-gray-600/30"></div>
               <div className="absolute h-full w-[1px] bg-gray-600/30"></div>
               
-              {/* 摇杆帽 */}
               <div 
                 className={`absolute w-16 h-16 rounded-full shadow-[0_10px_20px_rgba(0,0,0,0.6)] border border-gray-400/50 flex items-center justify-center z-30
                   ${isDragging ? 'bg-gradient-to-b from-blue-500 to-blue-700' : 'bg-gradient-to-b from-gray-500 to-gray-700'}
@@ -191,7 +187,6 @@
                   transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)' 
                 }}
               >
-                {/* 摇杆防滑纹理 */}
                 <div className="w-10 h-10 rounded-full border border-white/10 bg-black/10"></div>
               </div>
             </div>
@@ -201,10 +196,56 @@
     };
 
     // ============================================================================
-    // --- [File: src/components/HomePanel.jsx] ---
-    // 首页 (Dashboard)
+    // --- [File: src/components/Shared/DPad8Way.jsx] ---
     // ============================================================================
-    const HomePanel = () => {
+    const DPad8Way = ({ label }) => {
+      const [activeDir, setActiveDir] = useState(null);
+
+      const dirs = [
+        { id: 'ul', classes: 'rounded-tl-full' },
+        { id: 'u',  classes: '', icon: 'fa-caret-up' },
+        { id: 'ur', classes: 'rounded-tr-full' },
+        { id: 'l',  classes: '', icon: 'fa-caret-left' },
+        { id: 'center', classes: 'bg-gray-600 rounded-full border-2 border-gray-700 shadow-md transform scale-75 pointer-events-none' },
+        { id: 'r',  classes: '', icon: 'fa-caret-right' },
+        { id: 'dl', classes: 'rounded-bl-full' },
+        { id: 'd',  classes: '', icon: 'fa-caret-down' },
+        { id: 'dr', classes: 'rounded-br-full' },
+      ];
+
+      return (
+        <div className="flex flex-col items-center gap-3">
+          <div className="text-gray-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2 drop-shadow-md">
+            <i className="fa-solid fa-crosshairs text-teal-400"></i> {label}
+          </div>
+          <div className="grid grid-cols-3 grid-rows-3 gap-0.5 p-2 bg-gray-800/80 rounded-full border-[3px] border-gray-600/50 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-sm w-36 h-36">
+             {dirs.map(dir => {
+               if (dir.id === 'center') return <div key={dir.id} className={dir.classes}></div>;
+               return (
+                 <button 
+                   key={dir.id}
+                   onPointerDown={() => setActiveDir(dir.id)}
+                   onPointerUp={() => setActiveDir(null)}
+                   onPointerLeave={() => setActiveDir(null)}
+                   className={`flex items-center justify-center transition-colors duration-75 
+                     ${dir.classes}
+                     ${activeDir === dir.id ? 'bg-teal-600' : 'bg-gray-700/30 hover:bg-teal-500/50'}`}
+                 >
+                   {dir.icon && <i className={`fa-solid ${dir.icon} ${activeDir === dir.id ? 'text-white' : 'text-white/50'}`}></i>}
+                 </button>
+               )
+             })}
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================================================
+    // --- [File: src/components/HomePanel.jsx] ---
+    // ============================================================================
+    const HomePanel = ({ isConnected, setIsConnected, systemMode }) => {
+      const [isConnecting, setIsConnecting] = useState(false);
+      
       const [hardwareStats, setHardwareStats] = useState({
         orin: { cpu: 42, gpu: 68, ram: '18.4GB', temp: 65 },
         xcu: { freq: 1000, load: 12, ping: 1.2, temp: 42 },
@@ -263,7 +304,15 @@
       const [isRestartingAll, setIsRestartingAll] = useState(false);
       const [restartSuccess, setRestartSuccess] = useState(false);
 
+      // 修正缺失的变量定义
+      const alarmHistory = [
+        { id: 1, time: '14:22:05', code: 'ERR-042', desc: '预警信息：预留模块连接异常', type: 'error' },
+        { id: 2, time: '13:15:30', code: 'WARN-11', desc: '左膝关节温度达到 52°C 预警值', type: 'warning' },
+        { id: 3, time: '09:40:12', code: 'INFO-01', desc: '系统启动自检完成，双脑通讯正常', type: 'info' },
+      ];
+
       useEffect(() => {
+        if (!isConnected) return;
         const timer = setInterval(() => {
           setHardwareStats(prev => ({
             ...prev,
@@ -277,17 +326,15 @@
               ...j, temp: Math.min(80, Math.max(30, j.temp + Math.floor((Math.random() - 0.5) * 3)))
             }))
           })));
-
         }, 1500);
         return () => clearInterval(timer);
-      }, []);
+      }, [isConnected]);
 
       const toggleService = (catIndex, itemIndex) => {
         const srvId = `${catIndex}-${itemIndex}`;
         if (processingSrv || isRestartingAll) return;
         
         setProcessingSrv(srvId);
-        
         setTimeout(() => {
           const newCats = [...serviceCategories];
           const currentStatus = newCats[catIndex].items[itemIndex].status;
@@ -295,10 +342,7 @@
           if (currentStatus === 'running') nextStatus = 'stopped';
           if (currentStatus === 'error') nextStatus = 'stopped'; 
           
-          newCats[catIndex].items[itemIndex] = { 
-            ...newCats[catIndex].items[itemIndex], 
-            status: nextStatus 
-          };
+          newCats[catIndex].items[itemIndex] = { ...newCats[catIndex].items[itemIndex], status: nextStatus };
           setServiceCategories(newCats);
           setProcessingSrv(null);
         }, 800);
@@ -318,15 +362,45 @@
         }, 1500);
       };
 
-      const alarmHistory = [
-        { id: 1, time: '14:22:05', code: 'ERR-042', desc: '预警信息：预留模块连接异常', type: 'error' },
-        { id: 2, time: '13:15:30', code: 'WARN-11', desc: '左膝关节温度达到 52°C 预警值', type: 'warning' },
-        { id: 3, time: '09:40:12', code: 'INFO-01', desc: '系统启动自检完成，双脑通讯正常', type: 'info' },
-      ];
+      const getSystemModeColor = (mode) => {
+        if (mode.includes('Protect')) return 'bg-gray-100/20 text-gray-200 border-gray-400';
+        if (mode.includes('Stand')) return 'bg-green-500/20 text-green-400 border-green-500/30';
+        if (mode.includes('Motion')) return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+        return 'bg-blue-500/20 text-blue-400 border-blue-500/30'; 
+      };
+
+      if (!isConnected) {
+        return (
+          <div className="w-full h-full flex items-center justify-center bg-gray-50/50 rounded-2xl animate-[fadeIn_0.3s_ease-in-out]">
+            <div className="bg-white p-10 rounded-3xl shadow-xl border border-gray-200 max-w-lg w-full flex flex-col items-center text-center transform scale-100">
+              <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner">
+                <i className="fa-solid fa-wifi"></i>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">未连接到机器人</h2>
+              <p className="text-sm text-gray-500 mb-8 leading-relaxed px-4">
+                请先确保 Pad 的 Wi-Fi 已连接至机器人发射的 AP 热点 <br/>(如: <span className="font-mono text-gray-800 font-bold bg-gray-100 px-1 rounded">GALBOT-AP-XXXX</span>)<br/>连接网络后，点击下方按钮建立系统通讯。
+              </p>
+              <button 
+                onClick={() => {
+                  setIsConnecting(true);
+                  setTimeout(() => {
+                    setIsConnecting(false);
+                    setIsConnected(true);
+                  }, 1500);
+                }}
+                disabled={isConnecting}
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 pad-btn"
+              >
+                {isConnecting ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-link"></i>}
+                {isConnecting ? '正在建立通讯...' : '确认连接并进入系统'}
+              </button>
+            </div>
+          </div>
+        );
+      }
 
       return (
         <div className="w-full flex flex-col gap-5 lg:h-full animate-[fadeIn_0.3s_ease-in-out]">
-          
           <div className="bg-gradient-to-r from-blue-800 to-slate-800 rounded-2xl p-4 md:p-5 text-white flex flex-col lg:flex-row items-start lg:items-center justify-between shadow-lg shrink-0 gap-4 lg:gap-0">
              <div className="flex items-center gap-4 w-full lg:w-auto">
                <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20 shrink-0">
@@ -343,10 +417,12 @@
              </div>
              
              <div className="flex items-center justify-between lg:justify-end gap-6 bg-black/20 p-3 rounded-xl backdrop-blur-md w-full lg:w-auto border border-white/10">
-                <div className="flex flex-col gap-0.5 items-start lg:items-end pr-4">
+                <div className="flex flex-col gap-0.5 items-center">
                   <span className="text-[9px] uppercase font-bold text-blue-300">机器人运行模式</span>
-                  <div className="flex items-center gap-2 text-sm font-bold text-white">
-                    <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs border border-green-500/30">IDLE 阻尼</span>
+                  <div className="flex items-center gap-2 text-sm font-bold text-white mt-0.5">
+                    <span className={`px-3 py-1 rounded text-xs border ${getSystemModeColor(systemMode)} transition-colors`}>
+                      {systemMode}
+                    </span>
                   </div>
                 </div>
              </div>
@@ -542,11 +618,8 @@
 
     // ============================================================================
     // --- [File: src/components/ControlPanel.jsx] ---
-    // 控制页面 - Pad 触控大重构 (弧形按钮排布与配置弹窗)
     // ============================================================================
-    const ControlPanel = () => {
-      const [rcMode, setRcMode] = useState('Idle (阻尼)');
-      
+    const ControlPanel = ({ systemMode, setSystemMode }) => {
       const modes = [
         { id: 'Protect (零力矩)', color: 'bg-gray-100 text-gray-700 border-gray-300' },
         { id: 'Idle (阻尼)', color: 'bg-blue-100 text-blue-700 border-blue-300' },
@@ -554,7 +627,6 @@
         { id: 'Motion (运动)', color: 'bg-purple-100 text-purple-700 border-purple-300' }
       ];
 
-      // 预设可用动作列表
       const availableActions = [
         '打招呼', '下蹲', '握手', '复位', '点头', '摇头', '招手', '鼓掌'
       ];
@@ -566,7 +638,6 @@
       ]);
 
       const [activeBtn, setActiveBtn] = useState(null);
-      // 用于控制配置动作的弹窗
       const [showConfigModal, setShowConfigModal] = useState(false);
       const [newActionType, setNewActionType] = useState(availableActions[0]);
 
@@ -575,7 +646,6 @@
         setTimeout(() => setActiveBtn(null), 150);
       };
 
-      // 确认添加新动作
       const confirmAddAction = () => {
         if (customActions.length >= 6) {
           alert("控制面板最多展示 6 个快捷键");
@@ -593,16 +663,14 @@
 
       return (
         <div className="w-full h-full flex flex-col min-h-0 animate-[fadeIn_0.3s_ease-in-out] relative">
-          
-          {/* 添加动作配置弹窗 */}
           {showConfigModal && (
             <div className="absolute inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-[fadeIn_0.2s_ease-in-out]">
               <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center text-center">
                 <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
                   <i className="fa-solid fa-plus-circle text-blue-400"></i> 配置新快捷动作
                 </h3>
-                <div className="w-full space-y-4 mb-6">
-                  <label className="block text-left text-xs text-gray-400 font-bold mb-1">选择要执行的指令</label>
+                <div className="w-full space-y-4 mb-6 text-left">
+                  <label className="block text-xs text-gray-400 font-bold mb-1">选择要执行的指令</label>
                   <select 
                     value={newActionType}
                     onChange={(e) => setNewActionType(e.target.value)}
@@ -634,10 +702,8 @@
           <div className="flex-1 bg-[#0f172a] rounded-2xl border border-gray-700 shadow-inner relative overflow-hidden flex flex-col user-select-none">
              <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#475569 2px, transparent 2px)', backgroundSize: '30px 30px' }}></div>
              
-             {/* 左侧：模式切换 (竖排) */}
              <div className="absolute left-8 top-1/2 transform -translate-y-1/2 z-10 flex flex-col items-center gap-4">
                <div className="text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-2 flex flex-col items-center gap-2">
-                 <i className="fa-solid fa-power-off text-yellow-500 text-lg"></i>
                  <span style={{writingMode: 'vertical-rl', letterSpacing: '4px'}}>模式切换</span>
                </div>
                <div className="flex flex-col gap-3 bg-gray-800/80 backdrop-blur-md border border-gray-700 p-3 rounded-3xl shadow-lg">
@@ -648,9 +714,9 @@
                    return (
                      <button 
                        key={m.id} 
-                       onClick={() => setRcMode(m.id)}
+                       onClick={() => setSystemMode(m.id)}
                        className={`w-16 h-16 rounded-2xl font-bold transition-all pad-btn flex flex-col items-center justify-center leading-tight
-                         ${rcMode === m.id ? m.color + ' shadow-md scale-110' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'}`}
+                         ${systemMode === m.id ? m.color + ' shadow-md scale-110' : 'bg-gray-700/50 text-gray-400 hover:bg-gray-600'}`}
                      >
                        <span className="text-sm">{enLabel}</span>
                        <span className="text-[10px] opacity-80 mt-0.5">{cnLabel}</span>
@@ -660,36 +726,33 @@
                </div>
              </div>
 
+             <div className="absolute top-10 right-12 z-20">
+               <DPad8Way label="头部转向 (Pitch/Yaw)" />
+             </div>
+
              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                 <div className="text-gray-500/30 text-8xl mb-4"><i className="fa-solid fa-robot"></i></div>
                 <div className="text-gray-500/50 font-bold tracking-[0.5em] uppercase text-xl">Active Control</div>
              </div>
 
-             {/* 左下角：行走方向摇杆 */}
              <div className="absolute bottom-12 left-32 z-20">
                <VirtualJoystick label="行走方向 (Linear XY)" icon="fa-arrows-up-down-left-right" />
              </div>
 
-             {/* 右下角：姿态转向摇杆 & 圆弧排布的快捷键 */}
              <div className="absolute bottom-12 right-32 z-20 flex items-center justify-center">
                <VirtualJoystick label="姿态转向 (Pitch/Yaw)" icon="fa-rotate">
                  {(() => {
-                   // 将所有动作(包含添加按钮)统一计算位置
                    const allItems = [...customActions];
                    if (customActions.length < 6) {
                      allItems.push({ id: 'add_new', action: '+', color: 'bg-gray-800/80 border-dashed border-gray-500 text-gray-400 hover:text-white hover:border-gray-400' });
                    }
 
                    const total = allItems.length;
-                   // 摇杆外圈半径，根据需要微调
                    const radius = 135; 
-                   // 弧形的起始和结束角度（相对圆心，以正上方为90度，左为180度，右为0度）
-                   // 这里我们想要一个从左上方包裹到正上方的圆弧
-                   const startAngle = 180; // 9点钟方向
-                   const endAngle = 90;    // 12点钟方向
+                   const startAngle = 180; 
+                   const endAngle = 90;    
 
                    return allItems.map((act, index) => {
-                     // 如果只有一个元素，放在中间；否则均匀分布在指定角度区间
                      const angleDeg = total === 1 
                        ? (startAngle + endAngle) / 2 
                        : startAngle - (startAngle - endAngle) * (index / (total - 1));
@@ -712,7 +775,7 @@
                          className={`absolute w-14 h-14 rounded-full font-bold text-white text-[10px] shadow-lg border-2 border-white/20 pad-btn flex flex-col items-center justify-center backdrop-blur-md pointer-events-auto
                            ${activeBtn === act.action ? 'brightness-150 scale-95' : 'brightness-100'} ${act.color}`}
                          style={{ 
-                           transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` // 确保按钮自身的中心点在计算出的 x,y 坐标上
+                           transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
                          }}
                        >
                          {act.action !== '+' && <i className="fa-solid fa-bolt text-sm opacity-80 mb-0.5"></i>}
@@ -723,7 +786,6 @@
                  })()}
                </VirtualJoystick>
              </div>
-             
           </div>
         </div>
       );
@@ -731,7 +793,6 @@
 
     // ============================================================================
     // --- [File: src/components/PerceptionPanel.jsx] ---
-    // 感知信息 (Perception)
     // ============================================================================
     const PerceptionPanel = () => {
       const [mainCam, setMainCam] = useState('头部双目');
@@ -778,12 +839,10 @@
 
       return (
         <div className="w-full flex flex-col lg:grid lg:grid-cols-12 gap-6 min-h-0 lg:h-full animate-[fadeIn_0.3s_ease-in-out]">
-          
           <div className="lg:col-span-7 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4 min-h-0 h-auto lg:h-full">
             <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2 shrink-0">
                <i className="fa-solid fa-video text-blue-500"></i> 视觉信息监控
             </h2>
-            
             <div className="flex-1 bg-black rounded-2xl relative overflow-hidden shadow-md border border-gray-300 group min-h-[350px]">
               {!showPointCloud ? (
                 <img src={activeMainCamConfig.url} className="w-full h-full object-cover opacity-90" alt="Main Camera" />
@@ -798,7 +857,6 @@
                   </div>
                 </div>
               )}
-              
               <div className="absolute top-4 left-4 flex flex-col gap-2">
                 <div className="bg-black/60 backdrop-blur-md text-white px-3 py-2 rounded-lg text-sm font-bold font-mono tracking-widest flex items-center gap-2 border border-white/10 shadow-sm">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
@@ -808,101 +866,58 @@
                   TYPE: {activeMainCamConfig.type}
                 </div>
               </div>
-
               {is3DSupported && (
                 <div className="absolute top-4 right-4 flex bg-black/60 backdrop-blur-md rounded-lg p-1.5 border border-white/20 shadow-lg">
-                  <button 
-                    onClick={() => setShowPointCloud(false)} 
-                    className={`px-5 py-2 text-xs font-bold rounded-md transition-all pad-btn ${!showPointCloud ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
-                  >
+                  <button onClick={() => setShowPointCloud(false)} className={`px-5 py-2 text-xs font-bold rounded-md transition-all pad-btn ${!showPointCloud ? 'bg-blue-600 text-white shadow-md' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}>
                     <i className="fa-solid fa-image mr-1"></i> 2D画面
                   </button>
-                  <button 
-                    onClick={() => setShowPointCloud(true)} 
-                    className={`px-5 py-2 text-xs font-bold rounded-md transition-all pad-btn ${showPointCloud ? 'bg-cyan-600 text-white shadow-md' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}
-                  >
+                  <button onClick={() => setShowPointCloud(true)} className={`px-5 py-2 text-xs font-bold rounded-md transition-all pad-btn ${showPointCloud ? 'bg-cyan-600 text-white shadow-md' : 'text-gray-300 hover:text-white hover:bg-white/10'}`}>
                     <i className="fa-solid fa-cubes mr-1"></i> 3D点云映射
                   </button>
                 </div>
               )}
             </div>
-            
             <div className="flex flex-wrap gap-2 shrink-0 p-2 bg-gray-50 rounded-xl border border-gray-100">
               {cameras.map(cam => (
-                <button 
-                  key={cam.id} 
-                  onClick={() => setMainCam(cam.id)} 
-                  className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all pad-btn shadow-sm min-w-[80px]
-                    ${mainCam === cam.id ? 'bg-blue-600 text-white border-transparent' : 'bg-white text-gray-600 border-gray-200 hover:bg-blue-50 hover:text-blue-600'}`}
-                >
-                  {cam.id}
-                </button>
+                <button key={cam.id} onClick={() => setMainCam(cam.id)} className={`flex-1 py-3 px-2 rounded-lg text-xs font-bold transition-all pad-btn shadow-sm min-w-[80px] ${mainCam === cam.id ? 'bg-blue-600 text-white border-transparent' : 'bg-white text-gray-600 border-gray-200 hover:bg-blue-50 hover:text-blue-600'}`}>{cam.id}</button>
               ))}
             </div>
           </div>
-
           <div className="lg:col-span-5 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col h-auto lg:h-full lg:overflow-hidden">
             <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-4 shrink-0">
                <i className="fa-solid fa-compass text-blue-500"></i> 传感器仪表面板
             </h2>
             <div className="flex-1 lg:overflow-y-auto custom-scrollbar pr-2 space-y-5">
-              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex flex-col justify-center">
-                <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-6 flex justify-between items-center">
-                  <span>姿态可视化 (Euler)</span>
-                </h3>
+              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex flex-col justify-center shadow-inner">
+                <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-6 flex justify-between items-center">姿态可视化 (Euler)</h3>
                 <div className="flex flex-col sm:flex-row gap-8 items-center">
                   <div className="w-32 h-32 perspective-container flex items-center justify-center bg-white rounded-xl border border-gray-200 shrink-0 shadow-sm">
                     <div className="w-16 h-20 bg-blue-500 preserve-3d transition-transform duration-75 shadow-md flex items-center justify-center" style={{ transform: `rotateX(${imuData.euler.pitch}deg) rotateY(${imuData.euler.yaw}deg) rotateZ(${imuData.euler.roll}deg)` }}>
                       <div className="w-3 h-3 bg-white rounded-full"></div>
                     </div>
                   </div>
-                  <div className="flex-1 w-full space-y-4">
-                    <div className="flex justify-between text-base border-b border-gray-200 pb-2"><span className="text-gray-500">Roll</span><span className="font-mono font-bold text-gray-800 text-lg">{imuData.euler.roll.toFixed(1)}°</span></div>
-                    <div className="flex justify-between text-base border-b border-gray-200 pb-2"><span className="text-gray-500">Pitch</span><span className="font-mono font-bold text-gray-800 text-lg">{imuData.euler.pitch.toFixed(1)}°</span></div>
-                    <div className="flex justify-between text-base"><span className="text-gray-500">Yaw</span><span className="font-mono font-bold text-gray-800 text-lg">{imuData.euler.yaw.toFixed(1)}°</span></div>
+                  <div className="flex-1 w-full space-y-4 font-mono font-bold">
+                    <div className="flex justify-between border-b border-gray-200 pb-2"><span className="text-gray-500">Roll</span><span className="text-gray-800">{imuData.euler.roll.toFixed(1)}°</span></div>
+                    <div className="flex justify-between border-b border-gray-200 pb-2"><span className="text-gray-500">Pitch</span><span className="text-gray-800">{imuData.euler.pitch.toFixed(1)}°</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Yaw</span><span className="text-gray-800">{imuData.euler.yaw.toFixed(1)}°</span></div>
                   </div>
                 </div>
               </div>
-              
-              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex flex-col justify-center">
-                <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-6">
-                  四元数 (Quaternions)
-                </h3>
-                <div className="grid grid-cols-4 gap-4">
-                  {['w', 'x', 'y', 'z'].map((axis) => (
-                    <div key={axis} className="bg-white p-4 rounded-xl border border-gray-200 flex flex-col items-center gap-1.5 shadow-sm">
-                      <span className="text-[10px] text-gray-400 uppercase font-bold">{axis} 轴</span>
-                      <span className="text-lg font-mono font-bold text-gray-800">{imuData.quat[axis].toFixed(3)}</span>
+              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex flex-col justify-center shadow-inner">
+                <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-6">四元数 (Quaternions)</h3>
+                <div className="grid grid-cols-4 gap-2">
+                  {['w', 'x', 'y', 'z'].map(axis => (
+                    <div key={axis} className="bg-white p-3 rounded-xl border border-gray-200 flex flex-col items-center gap-1.5 shadow-sm">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold">{axis}</span>
+                      <span className="text-sm font-mono font-bold text-gray-800">{imuData.quat[axis].toFixed(3)}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              
-              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex flex-col">
-                <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-8">
-                  加速度计 (m/s²)
-                </h3>
-                <div className="flex flex-col justify-center flex-1 space-y-6">
-                  {['x', 'y', 'z'].map((axis) => (
-                    <div key={`acc-${axis}`} className="flex items-center gap-4">
-                      <div className="w-6 text-sm font-bold text-gray-400 uppercase text-center">{axis}</div>
-                      <DualBar value={imuData.accel[axis]} max={20} unit="g" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex flex-col">
-                <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-8">
-                  陀螺仪 (rad/s)
-                </h3>
-                <div className="flex flex-col justify-center flex-1 space-y-6">
-                  {['x', 'y', 'z'].map((axis) => (
-                    <div key={`gyro-${axis}`} className="flex items-center gap-4">
-                      <div className="w-6 text-sm font-bold text-gray-400 uppercase text-center">{axis}</div>
-                      <DualBar value={imuData.gyro[axis]} max={3.14} unit="rad" />
-                    </div>
-                  ))}
+              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex flex-col shadow-inner">
+                <h3 className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-8">加速度计 (m/s²)</h3>
+                <div className="flex flex-col gap-6">
+                  {['x', 'y', 'z'].map(axis => (<div key={axis} className="flex items-center gap-4"><div className="w-6 text-xs font-bold text-gray-400 uppercase text-center">{axis}</div><DualBar value={imuData.accel[axis]} max={20} unit="g" /></div>))}
                 </div>
               </div>
             </div>
@@ -913,7 +928,6 @@
 
     // ============================================================================
     // --- [File: src/components/TeachingPanel.jsx] ---
-    // 示教 (Teaching)
     // ============================================================================
     const TeachingPanel = () => {
       const [isTeachingMode, setIsTeachingMode] = useState(false);
@@ -924,73 +938,27 @@
       const [isPlaying, setIsPlaying] = useState(false);
 
       const jointGroups = [
-        { 
-          id: 'head', name: '头部',
-          items: [{id: 'h_yaw', name: '偏航 (Yaw)', min: -90, max: 90}, {id: 'h_pitch', name: '俯仰 (Pitch)', min: -45, max: 45}, {id: 'h_roll', name: '横滚 (Roll)', min: -30, max: 30}] 
-        },
-        { 
-          id: 'l_arm', name: '左臂',
-          items: [
-            {id: 'la_s_pitch', name: '肩俯仰', min: -180, max: 180}, {id: 'la_s_roll', name: '肩横滚', min: -90, max: 90}, {id: 'la_s_yaw', name: '肩偏航', min: -90, max: 90},
-            {id: 'la_e_pitch', name: '肘俯仰', min: -150, max: 0},
-            {id: 'la_w_yaw', name: '腕偏航', min: -90, max: 90}, {id: 'la_w_pitch', name: '腕俯仰', min: -90, max: 90}, {id: 'la_w_roll', name: '腕横滚', min: -90, max: 90}
-          ] 
-        },
-        { 
-          id: 'r_arm', name: '右臂',
-          items: [
-            {id: 'ra_s_pitch', name: '肩俯仰', min: -180, max: 180}, {id: 'ra_s_roll', name: '肩横滚', min: -90, max: 90}, {id: 'ra_s_yaw', name: '肩偏航', min: -90, max: 90},
-            {id: 'ra_e_pitch', name: '肘俯仰', min: -150, max: 0},
-            {id: 'ra_w_yaw', name: '腕偏航', min: -90, max: 90}, {id: 'ra_w_pitch', name: '腕俯仰', min: -90, max: 90}, {id: 'ra_w_roll', name: '腕横滚', min: -90, max: 90}
-          ] 
-        },
-        { 
-          id: 'torso', name: '腰部',
-          items: [{id: 't_yaw', name: '偏航 (Yaw)', min: -90, max: 90}] 
-        },
+        { id: 'head', name: '头部', items: [{id:'h_yaw', name:'偏航 (Yaw)', min:-90, max:90},{id:'h_pitch', name:'俯仰 (Pitch)', min:-45, max:45},{id:'h_roll', name:'横滚 (Roll)', min:-30, max:30}] },
+        { id: 'l_arm', name: '左臂', items: [{id:'la_s_pitch', name:'肩俯仰', min:-180, max:180},{id:'la_s_roll', name:'肩横滚', min:-90, max:90},{id:'la_s_yaw', name:'肩偏航', min:-90, max:90},{id:'la_e_pitch', name:'肘俯仰', min:-150, max:0},{id:'la_w_yaw', name:'腕偏航', min:-90, max:90},{id:'la_w_pitch', name:'腕俯仰', min:-90, max:90},{id:'la_w_roll', name:'腕横滚', min:-90, max:90}] },
+        { id: 'r_arm', name: '右臂', items: [{id:'ra_s_pitch', name:'肩俯仰', min:-180, max:180},{id:'ra_s_roll', name:'肩横滚', min:-90, max:90},{id:'ra_s_yaw', name:'肩偏航', min:-90, max:90},{id:'ra_e_pitch', name:'肘俯仰', min:-150, max:0},{id:'ra_w_yaw', name:'腕偏航', min:-90, max:90},{id:'ra_w_pitch', name:'腕俯仰', min:-90, max:90},{id:'ra_w_roll', name:'腕横滚', min:-90, max:90}] },
+        { id: 'torso', name: '腰部', items: [{id:'t_yaw', name:'偏航 (Yaw)', min:-90, max:90}] },
       ];
 
-      const initialAngles = {
-        'h_yaw': 0, 'h_pitch': 0, 'h_roll': 0,
-        'la_s_pitch': 0, 'la_s_roll': 20, 'la_s_yaw': 0, 'la_e_pitch': -30, 'la_w_yaw': 0, 'la_w_pitch': 0, 'la_w_roll': 0,
-        'ra_s_pitch': 0, 'ra_s_roll': -20, 'ra_s_yaw': 0, 'ra_e_pitch': -30, 'ra_w_yaw': 0, 'ra_w_pitch': 0, 'ra_w_roll': 0,
-        't_yaw': 0
-      };
-
+      const initialAngles = { 'h_yaw':0,'h_pitch':0,'h_roll':0,'la_s_pitch':0,'la_s_roll':20,'la_s_yaw':0,'la_e_pitch':-30,'la_w_yaw':0,'la_w_pitch':0,'la_w_roll':0,'ra_s_pitch':0,'ra_s_roll':-20,'ra_s_yaw':0,'ra_e_pitch':-30,'ra_w_yaw':0,'ra_w_pitch':0,'ra_w_roll':0,'t_yaw':0 };
       const [jointAngles, setJointAngles] = useState(initialAngles);
-      const [keyframes, setKeyframes] = useState([
-        { id: 1, name: '起始点位 (Point 1)', time: 1.0, angles: { ...initialAngles } }
-      ]);
+      const [keyframes, setKeyframes] = useState([{ id: 1, name: '起始点位 (Point 1)', time: 1.0, angles: { ...initialAngles } }]);
 
       useEffect(() => {
         let interval = null;
-        if (isRecording) {
-          interval = setInterval(() => {
-            setRecordTime(prev => prev + 0.1);
-          }, 100);
-        } else if (!isRecording && recordTime !== 0) {
-          clearInterval(interval);
-        }
+        if (isRecording) { interval = setInterval(() => { setRecordTime(prev => prev + 0.1); }, 100); }
+        else if (!isRecording && recordTime !== 0) { clearInterval(interval); }
         return () => clearInterval(interval);
       }, [isRecording, recordTime]);
 
-      const handleAngleChange = (jId, val) => {
-        if(!isTeachingMode || teachMethod !== 'virtual' || isPlaying) return;
-        setJointAngles(prev => ({ ...prev, [jId]: val }));
-      };
-
-      const addKeyframe = () => {
-        setKeyframes([...keyframes, { 
-          id: Date.now(), 
-          name: `点位 (Point ${keyframes.length + 1})`, 
-          time: 1.0,
-          angles: { ...jointAngles }
-        }]);
-      };
-
+      const handleAngleChange = (jId, val) => { if(!isTeachingMode || teachMethod !== 'virtual' || isPlaying) return; setJointAngles(prev => ({ ...prev, [jId]: val })); };
+      const addKeyframe = () => { setKeyframes([...keyframes, { id: Date.now(), name: `点位 (Point ${keyframes.length + 1})`, time: 1.0, angles: { ...jointAngles } }]); };
       const playKeyframes = async () => {
-        if(keyframes.length === 0 || isPlaying) return;
-        setIsPlaying(true);
+        if(keyframes.length === 0 || isPlaying) return; setIsPlaying(true);
         for(let i = 0; i < keyframes.length; i++) {
           const kf = keyframes[i];
           if(kf.angles) setJointAngles(kf.angles);
@@ -998,68 +966,33 @@
         }
         setIsPlaying(false);
       };
-
-      const updateKeyframeTime = (id, newTime) => {
-        setKeyframes(keyframes.map(kf => kf.id === id ? { ...kf, time: parseFloat(newTime) || 1 } : kf));
-      };
-
-      const removeKeyframe = (id) => {
-        setKeyframes(keyframes.filter(kf => kf.id !== id));
-      };
-
-      const handleResetDefault = () => {
-        if(!isTeachingMode || teachMethod !== 'virtual' || isPlaying) return;
-        setJointAngles({ ...initialAngles });
-      };
+      const updateKeyframeTime = (id, newTime) => { setKeyframes(keyframes.map(kf => kf.id === id ? { ...kf, time: parseFloat(newTime) || 1 } : kf)); };
+      const removeKeyframe = (id) => { setKeyframes(keyframes.filter(kf => kf.id !== id)); };
+      const handleResetDefault = () => { if(!isTeachingMode || teachMethod !== 'virtual' || isPlaying) return; setJointAngles({ ...initialAngles }); };
 
       const toggleSystemTeaching = () => {
         const nextState = !isTeachingMode;
         setIsTeachingMode(nextState);
-        if (!nextState) {
-          setIsDexterousHandMode(false); 
-        }
+        if (!nextState) setIsDexterousHandMode(false); 
       };
 
       return (
         <div className="w-full flex flex-col lg:grid lg:grid-cols-12 gap-5 min-h-0 lg:h-full animate-[fadeIn_0.3s_ease-in-out]">
-          
           <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden min-h-[400px] lg:min-h-0 shrink-0">
             <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
-              <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                <i className="fa-solid fa-sliders text-blue-500"></i> 电机位置控制
-              </h2>
-              <button 
-                onClick={handleResetDefault}
-                disabled={!isTeachingMode || teachMethod !== 'virtual' || isPlaying}
-                className="text-[10px] bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 px-2 py-1 rounded transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 shadow-sm pad-btn"
-              >
-                <i className="fa-solid fa-rotate-left"></i> 恢复默认
-              </button>
+              <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2"><i className="fa-solid fa-sliders text-blue-500"></i> 电机位置控制</h2>
+              <button onClick={handleResetDefault} disabled={!isTeachingMode || teachMethod !== 'virtual' || isPlaying} className="text-[10px] bg-white border border-gray-300 hover:bg-gray-100 text-gray-600 px-2 py-1 rounded transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 shadow-sm pad-btn"><i className="fa-solid fa-rotate-left"></i> 恢复默认</button>
             </div>
-            
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-5">
               <div className={`transition-opacity ${(!isTeachingMode || teachMethod === 'physical' || isPlaying) ? 'opacity-50 pointer-events-none' : ''}`}>
                 {jointGroups.map((group, gIdx) => (
                   <div key={group.id} className={`${gIdx !== 0 ? 'mt-5 pt-5 border-t border-gray-100' : ''}`}>
-                    <h3 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                       <i className={`fa-solid ${group.icon || 'fa-circle-dot'} text-blue-300`}></i> {group.name}
-                    </h3>
+                    <h3 className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-4 flex items-center gap-1.5"><i className="fa-solid fa-circle-dot text-blue-300"></i> {group.name}</h3>
                     <div className="space-y-4">
                       {group.items.map(joint => (
                         <div key={joint.id} className="flex flex-col gap-1.5">
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="text-gray-700 font-medium">{joint.name}</span>
-                            <span className="font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200">{jointAngles[joint.id]?.toFixed(1)}°</span>
-                          </div>
-                          <input 
-                            type="range" 
-                            min={joint.min} 
-                            max={joint.max} 
-                            step="0.5" 
-                            value={jointAngles[joint.id] || 0} 
-                            onChange={(e) => handleAngleChange(joint.id, parseFloat(e.target.value))}
-                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
-                          />
+                          <div className="flex justify-between items-center text-[10px]"><span className="text-gray-700 font-medium">{joint.name}</span><span className="font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200">{jointAngles[joint.id]?.toFixed(1)}°</span></div>
+                          <input type="range" min={joint.min} max={joint.max} step="0.5" value={jointAngles[joint.id] || 0} onChange={(e) => handleAngleChange(joint.id, parseFloat(e.target.value))} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
                         </div>
                       ))}
                     </div>
@@ -1068,234 +1001,66 @@
               </div>
             </div>
           </div>
-
           <div className="lg:col-span-5 bg-[#0a0f1a] rounded-2xl relative overflow-hidden shadow-inner border border-slate-700/50 flex flex-col min-h-[300px] shrink-0">
             <div className="absolute top-4 left-4 z-20 flex items-center gap-3">
-              <span className="text-cyan-500 text-xs font-mono font-bold flex items-center gap-2 bg-black/40 px-2 py-1 rounded backdrop-blur-sm border border-cyan-900/50">
-                <i className="fa-solid fa-person-walking"></i> 仿真预览
-              </span>
-              {isPlaying && (
-                <span className="bg-blue-600/80 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1 animate-pulse">
-                  <i className="fa-solid fa-play"></i> 动作执行中...
-                </span>
-              )}
+              <span className="text-cyan-500 text-xs font-mono font-bold flex items-center gap-2 bg-black/40 px-2 py-1 rounded backdrop-blur-sm border border-cyan-900/50"><i className="fa-solid fa-person-walking"></i> 仿真预览</span>
+              {isPlaying && <span className="bg-blue-600/80 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1 animate-pulse"><i className="fa-solid fa-play"></i> 动作执行中...</span>}
             </div>
-
             <div className="flex-1 w-full h-full flex items-center justify-center relative">
               <div className="absolute inset-0" style={{backgroundImage: 'linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
-              
               <svg viewBox="50 20 300 400" className="w-full h-full overflow-visible drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">
                 <g transform="translate(0, 280)" style={{ transition: 'transform 0.5s ease-in-out' }}>
-                   <g transform="translate(180, 0)">
-                      <circle cx="0" cy="0" r="10" fill="#374151" />
-                      <path d="M 0 0 L -10 50" stroke="#4b5563" strokeWidth="12" strokeLinecap="round" />
-                      <circle cx="-10" cy="50" r="8" fill="#374151" />
-                      <path d="M -10 50 L -5 100" stroke="#6b7280" strokeWidth="10" strokeLinecap="round" />
-                      <path d="M -5 100 L -15 110 L 5 110 Z" fill="#9ca3af" />
-                   </g>
-                   <g transform="translate(220, 0)">
-                      <circle cx="0" cy="0" r="10" fill="#374151" />
-                      <path d="M 0 0 L 10 50" stroke="#4b5563" strokeWidth="12" strokeLinecap="round" />
-                      <circle cx="10" cy="50" r="8" fill="#374151" />
-                      <path d="M 10 50 L 5 100" stroke="#6b7280" strokeWidth="10" strokeLinecap="round" />
-                      <path d="M 5 100 L -5 110 L 15 110 Z" fill="#9ca3af" />
-                   </g>
+                   <g transform="translate(180, 0)"><circle cx="0" cy="0" r="10" fill="#374151" /><path d="M 0 0 L -10 50" stroke="#4b5563" strokeWidth="12" strokeLinecap="round" /><circle cx="-10" cy="50" r="8" fill="#374151" /><path d="M -10 50 L -5 100" stroke="#6b7280" strokeWidth="10" strokeLinecap="round" /><path d="M -5 100 L -15 110 L 5 110 Z" fill="#9ca3af" /></g>
+                   <g transform="translate(220, 0)"><circle cx="0" cy="0" r="10" fill="#374151" /><path d="M 0 0 L 10 50" stroke="#4b5563" strokeWidth="12" strokeLinecap="round" /><circle cx="10" cy="50" r="8" fill="#374151" /><path d="M 10 50 L 5 100" stroke="#6b7280" strokeWidth="10" strokeLinecap="round" /><path d="M 5 100 L -5 110 L 15 110 Z" fill="#9ca3af" /></g>
                 </g>
-
                 <g transform={`translate(${jointAngles.t_yaw * 0.2}, 0)`} style={{ transition: 'transform 0.5s ease-in-out' }}>
                   <rect x="160" y="140" width="80" height="140" rx="15" fill="#3b82f6" fillOpacity="0.8" stroke="#60a5fa" strokeWidth="3" />
-                  
                   <g transform={`translate(200, 140) rotate(${jointAngles.h_roll}) translate(0, ${jointAngles.h_pitch * -0.2})`} style={{ transition: 'transform 0.5s ease-in-out' }}>
-                    <path d="M 0 0 L 0 -20" stroke="#9ca3af" strokeWidth="8" strokeLinecap="round" />
-                    <rect x="-25" y="-60" width="50" height="50" rx="10" fill="#e5e7eb" stroke="#9ca3af" strokeWidth="2" />
-                    <circle cx={-10 + jointAngles.h_yaw * 0.15} cy="-40" r="4" fill="#ef4444" className="animate-pulse" style={{ transition: 'cx 0.5s ease-in-out' }}/>
-                    <circle cx={10 + jointAngles.h_yaw * 0.15} cy="-40" r="4" fill="#ef4444" className="animate-pulse" style={{ transition: 'cx 0.5s ease-in-out' }}/>
+                    <path d="M 0 0 L 0 -20" stroke="#9ca3af" strokeWidth="8" strokeLinecap="round" /><rect x="-25" y="-60" width="50" height="50" rx="10" fill="#e5e7eb" stroke="#9ca3af" strokeWidth="2" /><circle cx={-10 + jointAngles.h_yaw * 0.15} cy="-40" r="4" fill="#ef4444" className="animate-pulse" /><circle cx={10 + jointAngles.h_yaw * 0.15} cy="-40" r="4" fill="#ef4444" className="animate-pulse" />
                   </g>
-
                   <g transform={`translate(240, 160)`} style={{ transition: 'transform 0.5s ease-in-out' }}>
                     <g transform={`rotate(${jointAngles.la_s_roll})`} style={{ transition: 'transform 0.5s ease-in-out' }}>
-                      <circle cx="0" cy="0" r="12" fill="#60a5fa" />
-                      <g transform={`rotate(${jointAngles.la_s_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}>
-                        <path d="M 0 0 L 0 60" stroke="#9ca3af" strokeWidth="10" strokeLinecap="round" />
-                        <g transform={`translate(0, 60) rotate(${-jointAngles.la_e_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}>
-                          <circle cx="0" cy="0" r="10" fill="#4b5563" />
-                          <path d="M 0 0 L 0 50" stroke="#d1d5db" strokeWidth="8" strokeLinecap="round" />
-                          <g transform={`translate(0, 50) rotate(${jointAngles.la_w_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}>
-                            <circle cx="0" cy="0" r="8" fill="#fbbf24" />
-                            <path d="M -5 0 L -8 15 M 5 0 L 8 15" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" fill="none" />
-                          </g>
-                        </g>
-                      </g>
+                      <circle cx="0" cy="0" r="12" fill="#60a5fa" /><g transform={`rotate(${jointAngles.la_s_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}><path d="M 0 0 L 0 60" stroke="#9ca3af" strokeWidth="10" strokeLinecap="round" /><g transform={`translate(0, 60) rotate(${-jointAngles.la_e_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}><circle cx="0" cy="0" r="10" fill="#4b5563" /><path d="M 0 0 L 0 50" stroke="#d1d5db" strokeWidth="8" strokeLinecap="round" /><g transform={`translate(0, 50) rotate(${jointAngles.la_w_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}><circle cx="0" cy="0" r="8" fill="#fbbf24" /><path d="M -5 0 L -8 15 M 5 0 L 8 15" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" fill="none" /></g></g></g>
                     </g>
                   </g>
-
                   <g transform={`translate(160, 160)`} style={{ transition: 'transform 0.5s ease-in-out' }}>
                     <g transform={`rotate(${jointAngles.ra_s_roll})`} style={{ transition: 'transform 0.5s ease-in-out' }}>
-                      <circle cx="0" cy="0" r="12" fill="#60a5fa" />
-                      <g transform={`rotate(${-jointAngles.ra_s_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}>
-                        <path d="M 0 0 L 0 60" stroke="#9ca3af" strokeWidth="10" strokeLinecap="round" />
-                        <g transform={`translate(0, 60) rotate(${jointAngles.ra_e_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}>
-                          <circle cx="0" cy="0" r="10" fill="#4b5563" />
-                          <path d="M 0 0 L 0 50" stroke="#d1d5db" strokeWidth="8" strokeLinecap="round" />
-                          <g transform={`translate(0, 50) rotate(${-jointAngles.ra_w_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}>
-                            <circle cx="0" cy="0" r="8" fill="#fbbf24" />
-                            <path d="M -5 0 L -8 15 M 5 0 L 8 15" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" fill="none" />
-                          </g>
-                        </g>
-                      </g>
+                      <circle cx="0" cy="0" r="12" fill="#60a5fa" /><g transform={`rotate(${-jointAngles.ra_s_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}><path d="M 0 0 L 0 60" stroke="#9ca3af" strokeWidth="10" strokeLinecap="round" /><g transform={`translate(0, 60) rotate(${jointAngles.ra_e_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}><circle cx="0" cy="0" r="10" fill="#4b5563" /><path d="M 0 0 L 0 50" stroke="#d1d5db" strokeWidth="8" strokeLinecap="round" /><g transform={`translate(0, 50) rotate(${-jointAngles.ra_w_pitch})`} style={{ transition: 'transform 0.5s ease-in-out' }}><circle cx="0" cy="0" r="8" fill="#fbbf24" /><path d="M -5 0 L -8 15 M 5 0 L 8 15" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" fill="none" /></g></g></g>
                     </g>
                   </g>
                 </g>
               </svg>
             </div>
           </div>
-
           <div className="lg:col-span-4 flex flex-col gap-4 min-h-0 shrink-0">
-            
             <div className={`p-5 rounded-2xl border shadow-sm flex items-center justify-between transition-colors shrink-0 ${isTeachingMode ? 'bg-yellow-50 border-yellow-300' : 'bg-white border-gray-200'}`}>
               <div className="flex flex-col gap-3 w-full">
-                
-                <div className="flex justify-between items-center w-full border-b border-gray-100 pb-3">
-                  <div>
-                    <h2 className={`text-base font-bold flex items-center gap-2 ${isTeachingMode ? 'text-yellow-700' : 'text-gray-800'}`}>
-                      <i className="fa-solid fa-person-chalkboard"></i> 本体示教模式
-                    </h2>
-                  </div>
-                  <button 
-                    onClick={toggleSystemTeaching} 
-                    className={`w-12 h-6 rounded-full p-1 transition-colors relative shadow-inner ${isTeachingMode ? 'bg-yellow-500' : 'bg-gray-300'}`}
-                  >
-                    <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform absolute top-1 ${isTeachingMode ? 'left-[26px]' : 'left-1'}`}></div>
-                  </button>
-                </div>
-                
-                <div className="flex justify-between items-center w-full">
-                  <div>
-                    <h2 className={`text-sm font-bold flex items-center gap-2 ${isDexterousHandMode ? 'text-purple-700' : 'text-gray-600'}`}>
-                      <i className="fa-solid fa-hand-sparkles"></i> 灵巧手示教模式
-                    </h2>
-                  </div>
-                  <button 
-                    disabled={!isTeachingMode}
-                    onClick={() => setIsDexterousHandMode(!isDexterousHandMode)} 
-                    className={`w-10 h-5 rounded-full p-1 transition-colors relative shadow-inner ${!isTeachingMode ? 'opacity-50 cursor-not-allowed' : ''} ${isDexterousHandMode ? 'bg-purple-500' : 'bg-gray-300'}`}
-                  >
-                    <div className={`w-3 h-3 bg-white rounded-full shadow-md transition-transform absolute top-1 ${isDexterousHandMode ? 'left-[22px]' : 'left-1'}`}></div>
-                  </button>
-                </div>
-
+                <div className="flex justify-between items-center w-full border-b border-gray-100 pb-3"><div><h2 className={`text-base font-bold flex items-center gap-2 ${isTeachingMode ? 'text-yellow-700' : 'text-gray-800'}`}><i className="fa-solid fa-person-chalkboard"></i> 本体示教模式</h2></div><button onClick={toggleSystemTeaching} className={`w-12 h-6 rounded-full p-1 transition-colors relative shadow-inner ${isTeachingMode ? 'bg-yellow-500' : 'bg-gray-300'}`}><div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform absolute top-1 ${isTeachingMode ? 'left-[26px]' : 'left-1'}`}></div></button></div>
+                <div className="flex justify-between items-center w-full"><div><h2 className={`text-sm font-bold flex items-center gap-2 ${isDexterousHandMode ? 'text-purple-700' : 'text-gray-600'}`}><i className="fa-solid fa-hand-sparkles"></i> 灵巧手示教模式 <span className="text-[10px] text-gray-400 font-normal"> (仅支持实体拖动)</span></h2></div><button disabled={!isTeachingMode} onClick={() => setIsDexterousHandMode(!isDexterousHandMode)} className={`w-10 h-5 rounded-full p-1 transition-colors relative shadow-inner ${!isTeachingMode ? 'opacity-50 cursor-not-allowed' : ''} ${isDexterousHandMode ? 'bg-purple-500' : 'bg-gray-300'}`}><div className={`w-3 h-3 bg-white rounded-full shadow-md transition-transform absolute top-1 ${isDexterousHandMode ? 'left-[22px]' : 'left-1'}`}></div></button></div>
               </div>
             </div>
-
             <div className={`flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col min-h-0 ${(!isTeachingMode || isPlaying) && 'opacity-50 pointer-events-none'}`}>
-              
               <div className="flex border-b border-gray-100 p-2 gap-2 shrink-0">
-                <button 
-                  onClick={() => setTeachMethod('virtual')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors pad-btn ${teachMethod === 'virtual' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-50'}`}
-                >
-                  <i className="fa-solid fa-sliders mr-1"></i> 滑杆关键帧
-                </button>
-                <button 
-                  onClick={() => setTeachMethod('physical')}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors pad-btn ${teachMethod === 'physical' ? 'bg-purple-50 text-purple-700' : 'text-gray-500 hover:bg-gray-50'}`}
-                >
-                  <i className="fa-solid fa-hand mr-1"></i> 实体拖拽录制
-                </button>
+                <button onClick={() => setTeachMethod('virtual')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors pad-btn ${teachMethod === 'virtual' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-50'}`}><i className="fa-solid fa-sliders mr-1"></i> 滑杆关键帧</button>
+                <button onClick={() => setTeachMethod('physical')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors pad-btn ${teachMethod === 'physical' ? 'bg-purple-50 text-purple-700' : 'text-gray-500 hover:bg-gray-50'}`}><i className="fa-solid fa-hand mr-1"></i> 实体拖拽录制</button>
               </div>
-
               <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col">
-                
                 {teachMethod === 'virtual' ? (
                   <div className="flex flex-col h-full gap-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-gray-700">关键帧序列 (Timeline)</span>
-                      <button onClick={addKeyframe} className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 text-[10px] font-bold rounded-md transition-colors pad-btn">
-                        + 添加当前姿态
-                      </button>
-                    </div>
-                    
-                    <div className="flex-1 space-y-2 overflow-y-auto pr-1">
-                      {keyframes.map((kf, idx) => (
-                        <div key={kf.id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl group hover:border-blue-300 transition-colors">
-                          <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">{idx + 1}</div>
-                          <div className="flex-1">
-                            <input type="text" defaultValue={kf.name} className="w-full bg-transparent text-sm font-bold text-gray-800 outline-none border-b border-transparent focus:border-blue-500" />
-                            <div className="text-[10px] text-gray-500 mt-1 flex items-center gap-2">
-                              过渡时间(秒): <input type="number" step="0.1" min="0.1" value={kf.time} onChange={(e) => updateKeyframeTime(kf.id, e.target.value)} className="w-12 bg-white border border-gray-300 rounded px-1 text-center font-mono outline-none focus:border-blue-500" />
-                            </div>
-                          </div>
-                          <button onClick={() => removeKeyframe(kf.id)} className="text-red-400 hover:text-red-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i className="fa-solid fa-trash-can"></i>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="pt-4 border-t border-gray-100 flex gap-3 shrink-0">
-                      <button onClick={playKeyframes} className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 pad-btn">
-                        <i className="fa-solid fa-play"></i> 连贯预览
-                      </button>
-                      <button className="flex-1 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-1 pad-btn">
-                        <i className="fa-solid fa-floppy-disk"></i> 存为动作包
-                      </button>
-                    </div>
+                    <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-700">关键帧序列 (Timeline)</span><button onClick={addKeyframe} className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 text-[10px] font-bold rounded-md transition-colors pad-btn">+ 添加当前姿态</button></div>
+                    <div className="flex-1 space-y-2 overflow-y-auto pr-1">{keyframes.map((kf, idx) => (<div key={kf.id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl group hover:border-blue-300 transition-colors"><div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">{idx + 1}</div><div className="flex-1"><input type="text" defaultValue={kf.name} className="w-full bg-transparent text-sm font-bold text-gray-800 outline-none border-b border-transparent focus:border-blue-500" /><div className="text-[10px] text-gray-500 mt-1 flex items-center gap-2">过渡时间(秒): <input type="number" step="0.1" min="0.1" value={kf.time} onChange={(e) => updateKeyframeTime(kf.id, e.target.value)} className="w-12 bg-white border border-gray-300 rounded px-1 text-center font-mono outline-none focus:border-blue-500" /></div></div><button onClick={() => removeKeyframe(kf.id)} className="text-red-400 hover:text-red-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity"><i className="fa-solid fa-trash-can"></i></button></div>))}</div>
+                    <div className="pt-4 border-t border-gray-100 flex gap-3 shrink-0"><button onClick={playKeyframes} className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 pad-btn"><i className="fa-solid fa-play"></i> 连贯预览</button><button className="flex-1 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-1 pad-btn"><i className="fa-solid fa-floppy-disk"></i> 存为动作包</button></div>
                   </div>
                 ) : (
                   <div className="flex flex-col h-full items-center justify-center gap-8 py-4">
-                    <div className="text-center">
-                      <div className="text-sm font-bold text-gray-800 mb-2">进入阻尼模式</div>
-                      <p className="text-[10px] text-gray-500 max-w-[200px] leading-relaxed">
-                        点击开始后，机器人上半身关节将失去刚性。请用手直接掰动关节，系统将以 50Hz 频率记录连续轨迹。
-                      </p>
-                    </div>
-
-                    <div className="text-4xl font-mono font-bold tracking-widest text-gray-800">
-                      {recordTime.toFixed(1)}<span className="text-xl text-gray-400 ml-1">s</span>
-                    </div>
-
-                    <div className={`w-full h-16 flex items-end justify-center gap-1 ${isRecording ? 'opacity-100' : 'opacity-20'}`}>
-                      {Array.from({length: 30}).map((_, i) => (
-                        <div 
-                          key={i} 
-                          className="w-1.5 bg-purple-500 rounded-t-sm transition-all duration-100" 
-                          style={{ height: isRecording ? `${Math.random() * 100}%` : '5%' }}
-                        ></div>
-                      ))}
-                    </div>
-
-                    <div className="w-full flex flex-col gap-3">
-                      {!isRecording ? (
-                        <button 
-                          onClick={() => setIsRecording(true)}
-                          className="w-full py-4 bg-red-50 text-red-600 border border-red-200 font-bold text-sm rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2 pad-btn"
-                        >
-                          <div className="w-3 h-3 bg-red-600 rounded-full"></div> 开始录制拖拽轨迹
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => setIsRecording(false)}
-                          className="w-full py-4 bg-gray-800 text-white font-bold text-sm rounded-xl shadow-md hover:bg-gray-900 transition-colors flex items-center justify-center gap-2 animate-pulse pad-btn"
-                        >
-                          <div className="w-3 h-3 bg-white rounded-sm"></div> 停止录制
-                        </button>
-                      )}
-
-                      <div className="flex gap-3">
-                         <button disabled={isRecording || recordTime === 0} className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl disabled:opacity-50 transition-colors pad-btn">
-                           <i className="fa-solid fa-play mr-1"></i> 回放轨迹
-                         </button>
-                         <button disabled={isRecording || recordTime === 0} className="flex-1 py-2.5 bg-purple-600 text-white font-bold text-xs rounded-xl shadow-md disabled:opacity-50 hover:bg-purple-700 transition-colors pad-btn">
-                           <i className="fa-solid fa-floppy-disk mr-1"></i> 保存轨迹
-                         </button>
-                      </div>
-                    </div>
+                    <div className="text-center"><div className="text-sm font-bold text-gray-800 mb-2">进入阻尼模式</div><p className="text-[10px] text-gray-500 max-w-[200px] leading-relaxed">点击开始后，机器人上半身关节将失去刚性。请用手直接掰动关节，系统将以 50Hz 频率记录连续轨迹。</p></div>
+                    <div className="text-4xl font-mono font-bold tracking-widest text-gray-800">{recordTime.toFixed(1)}<span className="text-xl text-gray-400 ml-1">s</span></div>
+                    <div className={`w-full h-16 flex items-end justify-center gap-1 ${isRecording ? 'opacity-100' : 'opacity-20'}`}>{Array.from({length: 30}).map((_, i) => (<div key={i} className="w-1.5 bg-purple-500 rounded-t-sm transition-all duration-100" style={{ height: isRecording ? `${Math.random() * 100}%` : '5%' }}></div>))}</div>
+                    <div className="w-full flex flex-col gap-3">{!isRecording ? (<button onClick={() => setIsRecording(true)} className="w-full py-4 bg-red-50 text-red-600 border border-red-200 font-bold text-sm rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2 pad-btn"><div className="w-3 h-3 bg-red-600 rounded-full"></div> 开始录制拖拽轨迹</button>) : (<button onClick={() => setIsRecording(false)} className="w-full py-4 bg-gray-800 text-white font-bold text-sm rounded-xl shadow-md hover:bg-gray-900 transition-colors flex items-center justify-center gap-2 animate-pulse pad-btn"><div className="w-3 h-3 bg-white rounded-sm"></div> 停止录制</button>)}<div className="flex gap-3"><button disabled={isRecording || recordTime === 0} className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-bold text-xs rounded-xl disabled:opacity-50 transition-colors pad-btn"><i className="fa-solid fa-play mr-1"></i> 回放轨迹</button><button disabled={isRecording || recordTime === 0} className="flex-1 py-2.5 bg-purple-600 text-white font-bold text-xs rounded-xl shadow-md disabled:opacity-50 hover:bg-purple-700 transition-colors pad-btn"><i className="fa-solid fa-floppy-disk mr-1"></i> 保存轨迹</button></div></div>
                   </div>
                 )}
-                
               </div>
             </div>
-
           </div>
         </div>
       );
@@ -1303,358 +1068,47 @@
 
     // ============================================================================
     // --- [File: src/components/ConfigPanel.jsx] ---
-    // 配置 (系统与配置) 
     // ============================================================================
     const ConfigPanel = () => {
       const [activeSubTab, setActiveSubTab] = useState('rc_mapping');
-      
       const [rcConnected, setRcConnected] = useState(true);
       const [isPairing, setIsPairing] = useState(false);
       const [pairingTime, setPairingTime] = useState(0);
 
-      const subTabs = [
-        { id: 'rc_mapping', label: '遥控器映射', icon: 'fa-gamepad' },
-        { id: 'action_config', label: '动作配置', icon: 'fa-file-code' },
-        { id: 'network', label: '网络配置', icon: 'fa-network-wired' },
-        { id: 'system', label: '系统与运维', icon: 'fa-server' }
-      ];
-
-      const startPairing = () => {
-        setIsPairing(true);
-        setPairingTime(3);
-        let t = 3;
-        const timer = setInterval(() => {
-          t -= 1;
-          setPairingTime(t);
-          if(t <= 0) {
-            clearInterval(timer);
-            setIsPairing(false);
-            setRcConnected(true);
-          }
-        }, 1000);
-      };
-
-      const unbindDevice = () => {
-        setRcConnected(false);
-      };
+      const subTabs = [ { id: 'rc_mapping', label: '遥控器映射', icon: 'fa-gamepad' }, { id: 'action_config', label: '动作配置', icon: 'fa-file-code' }, { id: 'network', label: '网络配置', icon: 'fa-network-wired' }, { id: 'system', label: '系统与运维', icon: 'fa-server' } ];
+      const startPairing = () => { setIsPairing(true); setPairingTime(3); let t = 3; const timer = setInterval(() => { t -= 1; setPairingTime(t); if(t <= 0) { clearInterval(timer); setIsPairing(false); setRcConnected(true); } }, 1000); };
+      const unbindDevice = () => { setRcConnected(false); };
 
       return (
         <div className="w-full h-full flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden animate-[fadeIn_0.3s_ease-in-out]">
-          
-          <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 shrink-0 z-10">
-            <div className="flex overflow-x-auto custom-scrollbar pb-1 gap-2">
-              {subTabs.map(tab => (
-                <button 
-                  key={tab.id}
-                  onClick={() => setActiveSubTab(tab.id)}
-                  className={`flex items-center gap-2 py-2 px-4 rounded-xl min-w-[120px] transition-all pad-btn ${activeSubTab === tab.id ? 'bg-white text-blue-600 shadow-sm border border-gray-200 font-bold' : 'bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-800 font-medium border border-transparent'}`}
-                >
-                  <i className={`fa-solid ${tab.icon} text-lg`}></i>
-                  <span className="text-xs whitespace-nowrap">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
+          <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 shrink-0 z-10"><div className="flex overflow-x-auto custom-scrollbar pb-1 gap-2">{subTabs.map(tab => (<button key={tab.id} onClick={() => setActiveSubTab(tab.id)} className={`flex items-center gap-2 py-2 px-4 rounded-xl min-w-[120px] transition-all pad-btn ${activeSubTab === tab.id ? 'bg-white text-blue-600 shadow-sm border border-gray-200 font-bold' : 'bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-800 font-medium border border-transparent'}`}><i className={`fa-solid ${tab.icon} text-lg`}></i><span className="text-xs whitespace-nowrap">{tab.label}</span></button>))}</div></div>
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-white">
             {activeSubTab === 'rc_mapping' && (
-              <div className="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.2s_ease-in-out]">
-                
+              <div className="max-w-4xl mx-auto space-y-6">
                 <div className="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                   <div>
-                     <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2"><i className="fa-brands fa-bluetooth text-blue-500"></i> 设备连接与配对</h3>
-                     <p className="text-[10px] text-gray-500 mt-1">支持蓝牙与 2.4G 接收机手柄配对绑定</p>
-                   </div>
-                   <div className="flex items-center gap-3">
-                     {rcConnected ? (
-                        <>
-                           <div className="bg-green-50 px-3 py-1.5 rounded-lg border border-green-200 flex items-center gap-2">
-                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_#22c55e]"></div>
-                             <span className="text-xs font-bold text-green-700">XInput Controller 已连接</span>
-                           </div>
-                           <button onClick={unbindDevice} className="px-4 py-1.5 bg-white border border-gray-300 text-red-600 hover:bg-red-50 text-xs font-bold rounded-lg transition-colors shadow-sm pad-btn">
-                             解绑遥控器
-                           </button>
-                        </>
-                     ) : (
-                        <>
-                           <div className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 flex items-center gap-2">
-                             <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                             <span className="text-xs font-bold text-gray-600">未连接任何设备</span>
-                           </div>
-                           <button onClick={startPairing} disabled={isPairing} className="px-5 py-1.5 bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-wait text-xs font-bold rounded-lg transition-colors shadow-sm min-w-[100px] pad-btn">
-                              {isPairing ? `搜索中... ${pairingTime}s` : '开始配对'}
-                           </button>
-                        </>
-                     )}
-                   </div>
+                   <div><h3 className="text-sm font-bold text-gray-800 flex items-center gap-2"><i className="fa-brands fa-bluetooth text-blue-500"></i> 设备连接与配对</h3><p className="text-[10px] text-gray-500 mt-1">支持蓝牙与 2.4G 接收机手柄配对绑定</p></div>
+                   <div className="flex items-center gap-3">{rcConnected ? (<><div className="bg-green-50 px-3 py-1.5 rounded-lg border border-green-200 flex items-center gap-2"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span className="text-xs font-bold text-green-700">XInput Controller 已连接</span></div><button onClick={unbindDevice} className="px-4 py-1.5 bg-white border border-gray-300 text-red-600 hover:bg-red-50 text-xs font-bold rounded-lg transition-colors shadow-sm pad-btn">解绑遥控器</button></>) : (<><div className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 flex items-center gap-2"><div className="w-2 h-2 bg-gray-400 rounded-full"></div><span className="text-xs font-bold text-gray-600">未连接任何设备</span></div><button onClick={startPairing} disabled={isPairing} className="px-5 py-1.5 bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 text-xs font-bold rounded-lg pad-btn">{isPairing ? `搜索中... ${pairingTime}s` : '开始配对'}</button></>)}</div>
                 </div>
-
                 <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 transition-opacity duration-300 ${!rcConnected ? 'opacity-40 pointer-events-none' : ''}`}>
                   <div className="space-y-6">
                     <div className="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                      <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                        <i className="fa-solid fa-arrows-up-down-left-right text-gray-500"></i>
-                        <h3 className="text-sm font-bold text-gray-700">摇杆区 (Sticks)</h3>
-                      </div>
+                      <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2"><i className="fa-solid fa-arrows-up-down-left-right text-gray-500"></i><h3 className="text-sm font-bold text-gray-700">摇杆区 (Sticks)</h3></div>
                       <div className="p-4 space-y-5">
-                        <div className="space-y-3">
-                          <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-l-2 border-indigo-500 pl-2">左摇杆 (Left Stick)</h4>
-                          <div className="space-y-2 pl-3">
-                            <div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
-                              <span className="text-xs font-bold text-gray-600 w-16">Y 轴 (上下)</span>
-                              <select className="text-xs border-b border-gray-300 py-1 outline-none focus:border-indigo-500 font-medium text-gray-800 bg-transparent flex-1 text-right">
-                                <option>前进/后退速度 (Linear X)</option>
-                                <option>机身俯仰角 (Pitch)</option>
-                                <option>无映射 (Unassigned)</option>
-                              </select>
-                            </div>
-                            <div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
-                              <span className="text-xs font-bold text-gray-600 w-16">X 轴 (左右)</span>
-                              <select className="text-xs border-b border-gray-300 py-1 outline-none focus:border-indigo-500 font-medium text-gray-800 bg-transparent flex-1 text-right">
-                                <option>左移/右移速度 (Linear Y)</option>
-                                <option>机身横滚角 (Roll)</option>
-                                <option>无映射 (Unassigned)</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3 pt-2">
-                          <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-l-2 border-indigo-500 pl-2">右摇杆 (Right Stick)</h4>
-                          <div className="space-y-2 pl-3">
-                            <div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
-                              <span className="text-xs font-bold text-gray-600 w-16">Y 轴 (上下)</span>
-                              <select className="text-xs border-b border-gray-300 py-1 outline-none focus:border-indigo-500 font-medium text-gray-800 bg-transparent flex-1 text-right">
-                                <option>机身俯仰角 (Pitch)</option>
-                                <option>前进/后退速度 (Linear X)</option>
-                                <option>无映射 (Unassigned)</option>
-                              </select>
-                            </div>
-                            <div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
-                              <span className="text-xs font-bold text-gray-600 w-16">X 轴 (左右)</span>
-                              <select className="text-xs border-b border-gray-300 py-1 outline-none focus:border-indigo-500 font-medium text-gray-800 bg-transparent flex-1 text-right">
-                                <option>原地转向速度 (Yaw Vel)</option>
-                                <option>头部左右转动 (Head Yaw)</option>
-                                <option>无映射 (Unassigned)</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm overflow-hidden opacity-70">
-                      <div className="bg-gray-200 px-4 py-3 border-b border-gray-300 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                           <i className="fa-solid fa-lock text-gray-500"></i>
-                           <h3 className="text-sm font-bold text-gray-700">系统模式切换 (硬编码不可改)</h3>
-                        </div>
-                      </div>
-                      <div className="p-4 space-y-2">
-                         <div className="flex items-center justify-between bg-gray-100 p-2.5 rounded border border-gray-200 text-xs font-medium text-gray-500">
-                           <span>数字键 1 (D-Pad 上)</span> <span>Protect 零力矩模式</span>
-                         </div>
-                         <div className="flex items-center justify-between bg-gray-100 p-2.5 rounded border border-gray-200 text-xs font-medium text-gray-500">
-                           <span>数字键 2 (D-Pad 下)</span> <span>Idle 阻尼模式</span>
-                         </div>
-                         <div className="flex items-center justify-between bg-gray-100 p-2.5 rounded border border-gray-200 text-xs font-medium text-gray-500">
-                           <span>数字键 3 (D-Pad 左)</span> <span>Stand 站立模式</span>
-                         </div>
-                         <div className="flex items-center justify-between bg-gray-100 p-2.5 rounded border border-gray-200 text-xs font-medium text-gray-500">
-                           <span>数字键 4 (D-Pad 右)</span> <span>Motion 运动模式</span>
-                         </div>
+                        <div className="space-y-3"><h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-l-2 border-indigo-500 pl-2">左摇杆</h4><div className="space-y-2 pl-3"><div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200"><span className="text-xs font-bold text-gray-600">Y 轴</span><select className="text-xs border-b border-gray-300 py-1 outline-none bg-transparent text-right"><option>前进/后退速度</option><option>机身俯仰角</option></select></div><div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200"><span className="text-xs font-bold text-gray-600">X 轴</span><select className="text-xs border-b border-gray-300 py-1 outline-none bg-transparent text-right"><option>左移/右移速度</option><option>机身横滚角</option></select></div></div></div>
+                        <div className="space-y-3 pt-2"><h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider border-l-2 border-indigo-500 pl-2">右摇杆</h4><div className="space-y-2 pl-3"><div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200"><span className="text-xs font-bold text-gray-600">Y 轴</span><select className="text-xs border-b border-gray-300 py-1 outline-none bg-transparent text-right"><option>机身俯仰角</option><option>前进/后退速度</option></select></div><div className="flex items-center justify-between bg-white p-2 rounded border border-gray-200"><span className="text-xs font-bold text-gray-600">X 轴</span><select className="text-xs border-b border-gray-300 py-1 outline-none bg-transparent text-right"><option>原地转向速度</option><option>头部左右转动</option></select></div></div></div>
                       </div>
                     </div>
                   </div>
-
                   <div className="space-y-6">
-                    <div className="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                      <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                           <i className="fa-solid fa-gamepad text-gray-500"></i>
-                           <h3 className="text-sm font-bold text-gray-700">功能按键 (Action Buttons)</h3>
-                        </div>
-                        <span className="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold">支持双击/长按</span>
-                      </div>
-                      <div className="p-4 space-y-3">
-                        {[
-                          { btn: 'A 键 (或 ✕)', defaultAction: '动作: 下蹲', type: 'Click' },
-                          { btn: 'B 键 (或 ◯)', defaultAction: '动作: 站立', type: 'Click' },
-                          { btn: 'X 键 (或 □)', defaultAction: '动作: 打招呼', type: 'Click' },
-                          { btn: 'Y 键 (或 △)', defaultAction: '进入系统休眠', type: 'Hold (2s)' },
-                        ].map((item, idx) => (
-                           <div key={idx} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-2 hover:border-indigo-300 transition-colors">
-                             <div className="flex justify-between items-center border-b border-gray-50 pb-1.5">
-                               <div className="flex items-center gap-2">
-                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-inner 
-                                    ${item.btn.includes('A') ? 'bg-green-500' : item.btn.includes('B') ? 'bg-red-500' : item.btn.includes('X') ? 'bg-blue-500' : 'bg-yellow-500'}`}>
-                                    {item.btn[0]}
-                                  </div>
-                                  <span className="text-xs font-bold text-gray-700">{item.btn}</span>
-                               </div>
-                               <select className="text-[10px] bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5 font-mono text-gray-600 outline-none">
-                                 <option selected={item.type === 'Click'}>单击 (Click)</option>
-                                 <option selected={item.type === 'Double Click'}>双击 (Double)</option>
-                                 <option selected={item.type === 'Hold (2s)'}>长按 2秒 (Hold)</option>
-                               </select>
-                             </div>
-                             <select className="w-full text-xs border-b border-gray-300 py-1 outline-none focus:border-indigo-500 font-medium text-gray-800 bg-transparent">
-                               <option>{item.defaultAction}</option>
-                               <option>动作: 握手</option>
-                               <option>机械臂复位</option>
-                               <option>无映射 (None)</option>
-                             </select>
-                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className={`flex justify-end pt-4 pb-6 sticky bottom-0 bg-white/90 backdrop-blur border-t border-gray-100 ${!rcConnected ? 'opacity-40 pointer-events-none' : ''}`}>
-                  <div className="flex gap-3">
-                    <button className="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold text-sm rounded-xl hover:bg-gray-200 transition-all pad-btn">恢复默认</button>
-                    <button className="px-8 py-2.5 bg-indigo-600 text-white font-bold text-sm rounded-xl shadow-md hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2 pad-btn">
-                      <i className="fa-solid fa-check"></i> 应用并保存配置
-                    </button>
+                    <div className="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm overflow-hidden opacity-70"><div className="bg-gray-200 px-4 py-3 border-b border-gray-300 flex items-center justify-between"><div className="flex items-center gap-2"><i className="fa-solid fa-lock text-gray-500"></i><h3 className="text-sm font-bold text-gray-700">模式切换 (只读)</h3></div></div><div className="p-4 space-y-2 text-xs text-gray-500 font-medium"><div className="flex justify-between bg-gray-100 p-2.5 rounded"><span>1 (D-Pad 上)</span><span>Protect 零力矩</span></div><div className="flex justify-between bg-gray-100 p-2.5 rounded"><span>2 (D-Pad 下)</span><span>Idle 阻尼</span></div></div></div>
+                    <div className="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm overflow-hidden"><div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center justify-between"><div className="flex items-center gap-2"><i className="fa-solid fa-gamepad text-gray-500"></i><h3 className="text-sm font-bold text-gray-700">功能按键</h3></div></div><div className="p-4 space-y-3">{[{btn:'A',act:'下蹲'},{btn:'B',act:'站立'}].map((item,idx)=>(<div key={idx} className="bg-white p-3 rounded-xl border border-gray-200 flex flex-col gap-2 shadow-sm"><div className="flex justify-between items-center border-b border-gray-50 pb-1.5"><span className="text-xs font-bold text-gray-700">{item.btn} 键</span><select className="text-[10px] bg-gray-100 border rounded px-1 font-mono text-gray-600"><option>单击</option><option>长按</option></select></div><select className="w-full text-xs outline-none font-medium text-gray-800 bg-transparent"><option>{item.act}</option><option>动作: 握手</option><option>无映射</option></select></div>))}</div></div>
                   </div>
                 </div>
               </div>
             )}
-
-            {activeSubTab === 'action_config' && (
-              <div className="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.2s_ease-in-out]">
-                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 border-b border-gray-200 pb-4">
-                  <i className="fa-solid fa-file-code text-blue-500"></i> 动作配置文件上传
-                </h2>
-                
-                <div className="bg-blue-50/50 p-8 rounded-2xl border-2 border-dashed border-blue-300 flex flex-col items-center justify-center text-center gap-4 hover:bg-blue-50 transition-colors cursor-pointer group">
-                   <div className="w-16 h-16 bg-white text-blue-500 rounded-full flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform">
-                     <i className="fa-solid fa-cloud-arrow-up"></i>
-                   </div>
-                   <div>
-                     <h3 className="font-bold text-blue-900 mb-1 text-lg">点击或拖拽动作配置文件到此处上传</h3>
-                     <p className="text-xs text-blue-600/70 mt-1">用于配置控制页面的快捷按键与预设指令映射 (.json, .yaml)</p>
-                   </div>
-                </div>
-
-                <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-sm">
-                  <h3 className="text-sm font-bold text-gray-700 mb-3">最近上传记录</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <i className="fa-solid fa-file-code text-gray-400 text-lg"></i>
-                        <div>
-                          <p className="text-xs font-bold text-gray-800">motion_sequence_v2.json</p>
-                          <p className="text-[10px] text-gray-500">45 KB • 刚刚上传</p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-bold">处理成功</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSubTab === 'network' && (
-              <div className="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.2s_ease-in-out]">
-                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 border-b border-gray-200 pb-4">
-                  <i className="fa-solid fa-network-wired text-blue-500"></i> 机端网络配置 (Network)
-                </h2>
-                
-                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                  <h3 className="text-sm font-bold text-gray-700 border-l-4 border-blue-500 pl-2">本体 Wi-Fi 连接</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-500 font-bold uppercase">Wi-Fi 名称 (SSID)</label>
-                      <input type="text" placeholder="输入 Wi-Fi 名称" className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-blue-500 font-medium text-gray-800 shadow-sm" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs text-gray-500 font-bold uppercase">Wi-Fi 密码</label>
-                      <input type="password" placeholder="输入密码" className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-blue-500 font-medium text-gray-800 shadow-sm" />
-                    </div>
-                  </div>
-                  <div className="flex justify-end pt-2">
-                    <button className="px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-xl shadow-md hover:bg-blue-700 active:scale-95 transition-all pad-btn">连接 Wi-Fi</button>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
-                  <h3 className="text-sm font-bold text-gray-700 border-l-4 border-indigo-500 pl-2">内部节点网络地址设置 (Static IP)</h3>
-                  
-                  <div className="space-y-4">
-                     <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                       <h4 className="text-xs font-bold text-indigo-600 mb-3 flex items-center gap-2"><i className="fa-solid fa-brain"></i> Orin 算力节点</h4>
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-gray-500 font-bold uppercase">IP 地址</label>
-                            <input type="text" defaultValue="192.168.1.100" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-indigo-500 font-mono text-gray-800 text-xs shadow-sm" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-gray-500 font-bold uppercase">子网掩码</label>
-                            <input type="text" defaultValue="255.255.255.0" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-indigo-500 font-mono text-gray-800 text-xs shadow-sm" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-gray-500 font-bold uppercase">网关 (Gateway)</label>
-                            <input type="text" defaultValue="192.168.1.1" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-indigo-500 font-mono text-gray-800 text-xs shadow-sm" />
-                          </div>
-                       </div>
-                     </div>
-
-                     <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                       <h4 className="text-xs font-bold text-teal-600 mb-3 flex items-center gap-2"><i className="fa-solid fa-wave-square"></i> XCU 运控节点</h4>
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-gray-500 font-bold uppercase">IP 地址</label>
-                            <input type="text" defaultValue="192.168.1.101" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-teal-500 font-mono text-gray-800 text-xs shadow-sm" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-gray-500 font-bold uppercase">子网掩码</label>
-                            <input type="text" defaultValue="255.255.255.0" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-teal-500 font-mono text-gray-800 text-xs shadow-sm" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-gray-500 font-bold uppercase">网关 (Gateway)</label>
-                            <input type="text" defaultValue="192.168.1.1" className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-teal-500 font-mono text-gray-800 text-xs shadow-sm" />
-                          </div>
-                       </div>
-                     </div>
-                  </div>
-
-                  <div className="flex justify-end pt-4 border-t border-gray-200">
-                    <button className="px-6 py-2.5 bg-indigo-600 text-white font-bold text-sm rounded-xl shadow-md hover:bg-indigo-700 active:scale-95 transition-all pad-btn">应用内部节点配置</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSubTab === 'system' && (
-              <div className="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.2s_ease-in-out]">
-                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 border-b border-gray-200 pb-4">
-                  <i className="fa-solid fa-server text-teal-500"></i> 系统运维与固件
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center gap-4 hover:border-teal-300 transition-colors group cursor-pointer pad-btn">
-                    <div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center text-2xl group-hover:bg-teal-100 transition-colors shadow-sm">
-                      <i className="fa-solid fa-cloud-arrow-up"></i>
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-800 mb-1">离线固件升级 (OTA)</h3>
-                      <p className="text-xs text-gray-500">上传 .bin 固件包进行系统迭代</p>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center text-center gap-4 hover:border-red-300 transition-colors group cursor-pointer pad-btn">
-                    <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center text-2xl group-hover:bg-red-100 transition-colors shadow-sm">
-                      <i className="fa-solid fa-rotate-left"></i>
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-red-600 mb-1">恢复出厂设置</h3>
-                      <p className="text-xs text-gray-500">清除所有用户数据与标定参数</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {activeSubTab === 'action_config' && (<div className="max-w-4xl mx-auto space-y-6 animate-[fadeIn_0.2s_ease-in-out]"><h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 border-b pb-4"><i className="fa-solid fa-file-code text-blue-500"></i> 动作配置文件</h2><div className="bg-blue-50/50 p-8 rounded-2xl border-2 border-dashed border-blue-300 flex flex-col items-center justify-center text-center gap-4 group cursor-pointer"><div className="w-16 h-16 bg-white text-blue-500 rounded-full flex items-center justify-center text-2xl shadow-sm"><i className="fa-solid fa-cloud-arrow-up"></i></div><h3 className="font-bold text-blue-900 mb-1 text-lg">点击或拖拽动作配置文件到此处上传</h3><p className="text-xs text-blue-600/70">用于配置控制页面的快捷按键与预设指令映射 (.json, .yaml)</p></div></div>)}
+            {activeSubTab === 'network' && (<div className="max-w-4xl mx-auto space-y-6"><h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 border-b pb-4"><i className="fa-solid fa-network-wired text-blue-500"></i> 机端网络配置</h2><div className="bg-gray-50 p-6 rounded-2xl space-y-4"><h3 className="text-sm font-bold text-gray-700 border-l-4 border-blue-500 pl-2">本体 Wi-Fi 连接</h3><div className="grid grid-cols-2 gap-6"><div className="space-y-1"><label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Wi-Fi SSID</label><input type="text" placeholder="输入名称" className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none" /></div><div className="space-y-1"><label className="text-xs text-gray-500 font-bold uppercase tracking-wider">Wi-Fi 密码</label><input type="password" placeholder="输入密码" className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none" /></div></div><div className="flex justify-end"><button className="px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-xl pad-btn">连接 Wi-Fi</button></div></div></div>)}
+            {activeSubTab === 'system' && (<div className="max-w-4xl mx-auto space-y-6"><h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 border-b pb-4"><i className="fa-solid fa-server text-teal-500"></i> 系统运维与固件</h2><div className="grid grid-cols-2 gap-5"><div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 flex flex-col items-center justify-center text-center gap-4 group cursor-pointer pad-btn"><div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center text-2xl group-hover:bg-teal-100 transition-colors shadow-sm"><i className="fa-solid fa-cloud-arrow-up"></i></div><div><h3 className="font-bold text-gray-800 mb-1">离线固件升级 (OTA)</h3><p className="text-xs text-gray-500">上传 .bin 固件包进行系统迭代</p></div></div><div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 flex flex-col items-center justify-center text-center gap-4 group cursor-pointer pad-btn"><div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center text-2xl group-hover:bg-red-100 transition-colors shadow-sm"><i className="fa-solid fa-rotate-left"></i></div><div><h3 className="font-bold text-red-600 mb-1">恢复出厂设置</h3><p className="text-xs text-gray-500">清除所有用户数据与标定参数</p></div></div></div></div>)}
           </div>
         </div>
       );
@@ -1664,15 +1118,17 @@
     // --- [File: src/App.jsx] ---
     // ============================================================================
     const App = () => {
+      const [isConnected, setIsConnected] = useState(false);
       const [activeTab, setActiveTab] = useState('首页');
       const [showEStopModal, setShowEStopModal] = useState(false);
+      const [systemMode, setSystemMode] = useState('Idle (阻尼)');
 
       const tabs = [
-        { id: '首页', icon: <i className="fa-solid fa-house text-lg"></i>, label: '首页', disabled: false },
-        { id: '控制', icon: <i className="fa-solid fa-gamepad text-lg"></i>, label: '控制', disabled: false },
-        { id: '感知', icon: <i className="fa-solid fa-eye text-lg"></i>, label: '感知', disabled: false },
-        { id: '示教', icon: <i className="fa-solid fa-hand-pointer text-lg"></i>, label: '示教', disabled: false },
-        { id: '配置', icon: <i className="fa-solid fa-sliders text-lg"></i>, label: '配置', disabled: false },
+        { id: '首页', icon: <i className="fa-solid fa-house text-lg"></i>, label: '首页' },
+        { id: '控制', icon: <i className="fa-solid fa-gamepad text-lg"></i>, label: '控制' },
+        { id: '感知', icon: <i className="fa-solid fa-eye text-lg"></i>, label: '感知' },
+        { id: '示教', icon: <i className="fa-solid fa-hand-pointer text-lg"></i>, label: '示教' },
+        { id: '配置', icon: <i className="fa-solid fa-sliders text-lg"></i>, label: '配置' },
       ];
 
       useEffect(() => {
@@ -1684,95 +1140,36 @@
 
       const confirmEStop = () => {
         setShowEStopModal(false);
-        console.error("【系统级警告】已触发全局紧急停止 (E-STOP)！");
+        setSystemMode('Protect (零力矩)');
       };
 
       return (
         <div className="flex h-screen w-screen bg-gray-50 overflow-hidden font-sans text-gray-900 select-none relative touch-none">
-          
-          {/* E-Stop 二次确认弹窗 */}
           {showEStopModal && (
             <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-[fadeIn_0.2s_ease-in-out]">
               <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl flex flex-col items-center text-center transform scale-100">
-                <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner">
-                  <i className="fa-solid fa-triangle-exclamation"></i>
-                </div>
+                <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner"><i className="fa-solid fa-triangle-exclamation"></i></div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-8">确认急停？</h2>
-                <div className="flex w-full gap-4">
-                  <button 
-                    onClick={() => setShowEStopModal(false)} 
-                    className="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl pad-btn text-base"
-                  >
-                    取消
-                  </button>
-                  <button 
-                    onClick={confirmEStop} 
-                    className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-[0_4px_15px_rgba(220,38,38,0.5)] pad-btn text-base"
-                  >
-                    确认
-                  </button>
-                </div>
+                <div className="flex w-full gap-4"><button onClick={() => setShowEStopModal(false)} className="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl pad-btn text-base">取消</button><button onClick={confirmEStop} className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-[0_4px_15px_rgba(220,38,38,0.5)] pad-btn text-base">确认</button></div>
               </div>
             </div>
           )}
-
           <aside className="w-64 bg-white border-r flex flex-col shrink-0 z-20 shadow-[2px_0_10px_rgba(0,0,0,0.02)] relative">
-            <div className="p-6 border-b">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-200">
-                  <i className="fa-solid fa-microchip text-xl"></i>
-                </div>
-                <div>
-                  <div className="font-bold text-gray-900 leading-tight">RobotOS</div>
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Web Terminal</div>
-                </div>
-              </div>
-            </div>
-
-            <nav className="flex-1 py-4 overflow-y-auto px-3">
-              <div className="space-y-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    disabled={tab.disabled}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`
-                      w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-base font-medium transition-all pad-btn
-                      ${tab.disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
-                      ${activeTab === tab.id && !tab.disabled
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200/50' 
-                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}
-                    `}
-                  >
-                    <span className="w-6 text-center">{tab.icon}</span>
-                    <span className="flex-1 text-left">{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-            </nav>
-            
+            <div className="p-6 border-b"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-200"><i className="fa-solid fa-microchip text-xl"></i></div><div><div className="font-bold text-gray-900 leading-tight">RobotOS</div><div className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Web Terminal</div></div></div></div>
+            <nav className="flex-1 py-4 overflow-y-auto px-3"><div className="space-y-2">{tabs.map((tab) => { const isDisabled = !isConnected && tab.id !== '首页'; return (<button key={tab.id} disabled={isDisabled} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-base font-medium transition-all pad-btn ${isDisabled ? 'opacity-40 cursor-not-allowed text-gray-400' : 'cursor-pointer'} ${activeTab === tab.id && !isDisabled ? 'bg-blue-600 text-white shadow-md shadow-blue-200/50' : (!isDisabled ? 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' : '')}`}><span className="w-6 text-center">{tab.icon}</span><span className="flex-1 text-left">{tab.label}</span></button>);})}</div></nav>
             <div className="p-4 border-t space-y-3">
-               <button 
-                onClick={() => setShowEStopModal(true)}
-                className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl py-4 shadow-[0_0_15px_rgba(220,38,38,0.4)] flex items-center justify-center gap-2 font-bold border-2 border-red-300 pad-btn group text-base"
-              >
-                <i className="fa-solid fa-power-off text-xl group-hover:scale-110 transition-transform"></i>
-                <span className="tracking-widest">全局急停</span>
-              </button>
-              <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_#22c55e]"></div>
-                <div className="text-xs text-green-700 font-bold uppercase tracking-tight">Connected</div>
-              </div>
+               <button onClick={() => setShowEStopModal(true)} disabled={!isConnected} className={`w-full text-white rounded-xl py-4 flex items-center justify-center gap-2 font-bold border-2 pad-btn group text-base transition-all ${isConnected ? 'bg-red-600 hover:bg-red-700 shadow-[0_0_15px_rgba(220,38,38,0.4)] border-red-300' : 'bg-gray-400 border-gray-300 opacity-50 cursor-not-allowed'}`}><i className={`fa-solid fa-power-off text-xl ${isConnected ? 'group-hover:scale-110 transition-transform' : ''}`}></i><span className="tracking-widest">全局急停</span></button>
+               <div className={`border rounded-xl p-3 flex items-center gap-3 transition-colors ${isConnected ? 'bg-green-50 border-green-100' : 'bg-gray-100 border-gray-200'}`}><div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse shadow-[0_0_5px_#22c55e]' : 'bg-gray-400'}`}></div><div className={`text-xs font-bold uppercase tracking-tight ${isConnected ? 'text-green-700' : 'text-gray-500'}`}>{isConnected ? 'Connected' : 'Offline'}</div></div>
             </div>
           </aside>
-
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-            <main className={`flex-1 overflow-auto flex flex-col min-h-0 bg-gray-200 p-6`}>
-              {activeTab === '首页' && <HomePanel />}
-              {activeTab === '控制' && <ControlPanel />}
-              {activeTab === '感知' && <PerceptionPanel />}
-              {activeTab === '示教' && <TeachingPanel />}
-              {activeTab === '配置' && <ConfigPanel />}
+            {activeTab !== '首页' && isConnected && (<header className="h-16 bg-white border-b flex items-center justify-between px-6 shrink-0 shadow-sm z-10"><div className="flex items-center gap-4"><h2 className="text-lg font-bold text-gray-800">{activeTab}</h2></div><div className="flex items-center gap-6"><div className="flex items-center gap-4 px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100"><div className="flex items-center gap-2 text-sm text-gray-600"><i className="fa-solid fa-battery-half text-green-500"></i><span className="font-mono font-bold">82%</span></div><div className="w-px h-3 bg-gray-200"></div><div className="flex items-center gap-2 text-sm text-gray-600"><i className="fa-solid fa-network-wired text-blue-500"></i><span className="font-mono font-bold">192.168.1.105</span></div></div></div></header>)}
+            <main className={`flex-1 overflow-auto flex flex-col min-h-0 ${isConnected ? 'bg-gray-200 p-6' : 'bg-white'}`}>
+              {activeTab === '首页' && <HomePanel isConnected={isConnected} setIsConnected={setIsConnected} systemMode={systemMode} />}
+              {activeTab === '控制' && isConnected && <ControlPanel systemMode={systemMode} setSystemMode={setSystemMode} />}
+              {activeTab === '感知' && isConnected && <PerceptionPanel />}
+              {activeTab === '示教' && isConnected && <TeachingPanel />}
+              {activeTab === '配置' && isConnected && <ConfigPanel />}
             </main>
           </div>
         </div>
