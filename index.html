@@ -68,10 +68,10 @@
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 overflow-hidden touch-none font-sans">
+<body class="bg-slate-300 text-slate-800 overflow-hidden touch-none font-sans">
   
   <div id="root">
-    <div style="display: flex; height: 100vh; width: 100vw; align-items: center; justify-content: center; background-color: #f8fafc; color: #475569; flex-direction: column; gap: 20px;">
+    <div style="display: flex; height: 100vh; width: 100vw; align-items: center; justify-content: center; background-color: #cbd5e1; color: #475569; flex-direction: column; gap: 20px;">
       <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: #3b82f6;"></i>
       <h2 style="margin: 0; font-size: 1.125rem; font-weight: 500;">正在初始化系统环境...</h2>
     </div>
@@ -312,7 +312,8 @@
           const currentStatus = newCats[catIndex].items[itemIndex].status;
           let nextStatus = 'running';
           if (currentStatus === 'running') nextStatus = 'stopped';
-          if (currentStatus === 'error') nextStatus = 'running'; 
+          // 修复 SLAM 拨片 Bug：如果是 error 状态，点击后强制停止
+          if (currentStatus === 'error') nextStatus = 'stopped'; 
           
           newCats[catIndex].items[itemIndex] = { ...newCats[catIndex].items[itemIndex], status: nextStatus };
           setServiceCategories(newCats);
@@ -587,7 +588,7 @@
     // ============================================================================
     // --- [File: src/components/ControlPanel.jsx] ---
     // ============================================================================
-    const ControlPanel = ({ systemMode, setSystemMode, globalActions }) => {
+    const ControlPanel = ({ systemMode, setSystemMode, globalActions, isConnected }) => {
       const modes = [
         { id: 'Protect (零力矩)', label: '零力矩', color: 'text-slate-600 border-slate-300 bg-white/90 shadow-sm' },
         { id: 'Idle (阻尼)', label: '阻尼', color: 'text-blue-600 border-blue-400 bg-blue-50/90 shadow-md' },
@@ -663,7 +664,26 @@
             style={{ backgroundImage: "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.4)), url('https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1600&q=80')" }}
           >
              
-             <div className="absolute left-6 top-1/2 transform -translate-y-1/2 z-10 flex flex-col gap-3">
+             {/* 控制面板顶部状态栏（悬浮在背景上） */}
+             <div className="absolute top-4 left-6 right-6 z-30 flex justify-between pointer-events-none">
+                <div className="flex gap-3 pointer-events-auto">
+                   <div className="bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-sm flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-slate-400'}`}></div>
+                      <span className="text-xs font-bold text-slate-700">{isConnected ? '已连接' : '未连接'}</span>
+                   </div>
+                   <div className="bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-sm flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-700">模式: {systemMode}</span>
+                   </div>
+                </div>
+                <div className="flex gap-3 pointer-events-auto">
+                   <div className="bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-sm flex items-center gap-2">
+                      <i className="fa-solid fa-battery-half text-green-600"></i>
+                      <span className="text-xs font-bold font-mono text-slate-700">82%</span>
+                   </div>
+                </div>
+             </div>
+
+             <div className="absolute left-6 top-[55%] transform -translate-y-1/2 z-10 flex flex-col gap-3">
                  {modes.map(m => (
                    <button 
                      key={m.id} 
@@ -677,7 +697,6 @@
              </div>
 
              <div className="absolute top-[40%] right-10 z-20 transform -translate-y-1/2">
-               {/* 这里的 DPad 已经改成圆形的了 */}
                <DPad8Way label="头部转向" />
              </div>
 
@@ -1097,7 +1116,7 @@
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
                   <h3 className="text-sm font-bold text-slate-700 mb-4 border-l-4 border-blue-500 pl-2">本体 Wi-Fi 连接</h3>
                   <div className="grid grid-cols-2 gap-5 mb-4">
-                    <div className="space-y-1.5"><label className="text-xs font-bold text-slate-500">网络名称 (SSID)</label><input type="text" defaultValue="GALBOT-AP-001" className="w-full p-2.5 text-sm font-medium bg-slate-50 border border-slate-200 rounded-lg outline-none text-slate-800 focus:border-blue-500" /></div>
+                    <div className="space-y-1.5"><label className="text-xs font-bold text-slate-500">网络名称 (SSID)</label><input type="text" defaultValue="wifi-001" className="w-full p-2.5 text-sm font-medium bg-slate-50 border border-slate-200 rounded-lg outline-none text-slate-800 focus:border-blue-500" /></div>
                     <div className="space-y-1.5"><label className="text-xs font-bold text-slate-500">密码 (Password)</label><input type="password" defaultValue="galbot" className="w-full p-2.5 text-sm font-medium bg-slate-50 border border-slate-200 rounded-lg outline-none text-slate-800 focus:border-blue-500" /></div>
                   </div>
                   <div className="flex justify-end"><button className="px-6 py-2 bg-blue-600 text-white font-bold text-sm rounded-lg pad-btn hover:bg-blue-700 shadow-md">连接 Wi-Fi</button></div>
@@ -1245,91 +1264,102 @@
       };
 
       return (
-        <div className="flex h-screen w-screen bg-slate-50 overflow-hidden font-sans text-slate-800 select-none touch-none">
-          {showEStopModal && (
-            <div className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
-              <div className="bg-white border border-slate-200 rounded-2xl p-8 w-full max-w-sm flex flex-col items-center text-center shadow-2xl">
-                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-sm border border-red-100">
-                  <i className="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <h2 className="text-lg font-bold text-slate-800 mb-6">确认触发全局急停？</h2>
-                <div className="flex w-full gap-4">
-                  <button onClick={() => setShowEStopModal(false)} className="flex-1 py-3.5 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl border border-slate-200 hover:bg-slate-200 pad-btn">取消</button>
-                  <button onClick={confirmEStop} className="flex-1 py-3.5 bg-red-600 text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-md pad-btn">确认断电</button>
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="flex h-screen w-screen bg-slate-300 items-center justify-center overflow-hidden font-sans text-slate-800 select-none touch-none p-4 md:p-6 lg:p-8">
           
-          {/* Sidebar */}
-          <aside className="w-56 bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-sm relative">
-            <div className="p-6 border-b border-slate-100 flex flex-col items-start gap-1.5">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white shadow-sm">
-                  <i className="fa-solid fa-microchip"></i>
-                </div>
-                <div className="text-lg font-bold text-slate-800 tracking-wide">RobotOS</div>
-              </div>
-              <div className="text-xs text-slate-500 font-medium ml-11">Web 控制终端</div>
-            </div>
-            <nav className="flex-1 py-5 flex flex-col gap-1.5 px-4">
-              {tabs.map((tab) => { 
-                const isDisabled = !isConnected && tab.id !== '首页'; 
-                return (
-                  <button 
-                    key={tab.id} 
-                    disabled={isDisabled} 
-                    onClick={() => setActiveTab(tab.id)} 
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all pad-btn 
-                      ${isDisabled ? 'opacity-40 cursor-not-allowed text-slate-400' : 'cursor-pointer'} 
-                      ${activeTab === tab.id && !isDisabled ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : (!isDisabled ? 'text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-transparent' : 'border border-transparent')}`}
-                  >
-                    <i className={`fa-solid ${tab.icon} w-5 text-center text-lg`}></i>
-                    <span className="flex-1 text-left">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-            <div className="p-5 border-t border-slate-100 space-y-4 bg-slate-50/50">
-               <button 
-                 onClick={() => setShowEStopModal(true)} 
-                 disabled={!isConnected} 
-                 className={`w-full py-3.5 flex items-center justify-center gap-2 text-sm font-bold rounded-xl transition-all shadow-sm pad-btn 
-                   ${isConnected ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-slate-100 text-slate-400 border border-slate-200 opacity-60'}`}
-               >
-                 <i className="fa-solid fa-power-off"></i> 全局急停
-               </button>
-               <div className="flex items-center gap-2.5 justify-center bg-white border border-slate-200 py-2 rounded-lg shadow-sm">
-                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-slate-300'}`}></div>
-                 <div className={`text-xs font-bold ${isConnected ? 'text-slate-700' : 'text-slate-400'}`}>{isConnected ? '系统已连接' : '离线状态'}</div>
-               </div>
-            </div>
-          </aside>
-          
-          {/* Main Area */}
-          <div className="flex-1 flex flex-col min-w-0 bg-slate-50 relative">
-            {/* 极简网格背景 */}
-            <div className="absolute inset-0 pointer-events-none" style={{backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px)', backgroundSize: '30px 30px', zIndex: 0}}></div>
+          {/* iPad Frame Wrapper */}
+          <div className="w-full h-full max-w-[1280px] max-h-[850px] bg-black rounded-[2.5rem] p-3 md:p-4 shadow-2xl relative flex ring-1 ring-black/20">
+            {/* iPad Camera Dot (Landscape Left) */}
+            <div className="absolute top-1/2 left-[8px] md:left-[10px] -translate-y-1/2 w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1a1a1a] shadow-[inset_0_0_2px_#000] border border-[#2a2a2a]"></div>
+            
+            {/* Inner Screen Area */}
+            <div className="flex-1 bg-slate-50 overflow-hidden flex relative rounded-[1.5rem] md:rounded-[1.8rem]">
 
-            {activeTab !== '首页' && isConnected && (
-              <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10 shadow-sm relative">
-                <h2 className="text-base font-bold text-slate-700 flex items-center gap-2">
-                  <span className="text-blue-500">/</span> {tabs.find(t=>t.id===activeTab).label}
-                </h2>
-                <div className="flex items-center gap-4 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-                  <span className="flex items-center gap-1.5"><i className="fa-solid fa-battery-half text-green-500"></i> <span className="font-mono font-bold">82%</span></span>
-                  <span className="text-slate-300">|</span>
-                  <span className="flex items-center gap-1.5"><i className="fa-solid fa-network-wired text-blue-500"></i> <span className="font-mono font-bold">192.168.1.105</span></span>
+              {showEStopModal && (
+                <div className="absolute inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-8 w-full max-w-sm flex flex-col items-center text-center shadow-2xl">
+                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-sm border border-red-100">
+                      <i className="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <h2 className="text-lg font-bold text-slate-800 mb-6">确认触发全局急停？</h2>
+                    <div className="flex w-full gap-4">
+                      <button onClick={() => setShowEStopModal(false)} className="flex-1 py-3.5 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl border border-slate-200 hover:bg-slate-200 pad-btn">取消</button>
+                      <button onClick={confirmEStop} className="flex-1 py-3.5 bg-red-600 text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-md pad-btn">确认断电</button>
+                    </div>
+                  </div>
                 </div>
-              </header>
-            )}
-            <main className={`flex-1 overflow-auto flex flex-col min-h-0 relative z-10 ${isConnected ? 'p-5 lg:p-6' : 'p-0'}`}>
-              {activeTab === '首页' && <HomePanel isConnected={isConnected} setIsConnected={setIsConnected} systemMode={systemMode} />}
-              {activeTab === '控制' && isConnected && <ControlPanel systemMode={systemMode} setSystemMode={setSystemMode} globalActions={globalActions} />}
-              {activeTab === '感知' && isConnected && <PerceptionPanel />}
-              {activeTab === '示教' && isConnected && <TeachingPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
-              {activeTab === '配置' && isConnected && <ConfigPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
-            </main>
+              )}
+              
+              {/* Sidebar */}
+              <aside className="w-56 bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-sm relative">
+                <div className="p-6 border-b border-slate-100 flex flex-col items-start gap-1.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white shadow-sm">
+                      <i className="fa-solid fa-microchip"></i>
+                    </div>
+                    <div className="text-lg font-bold text-slate-800 tracking-wide">RobotOS</div>
+                  </div>
+                  <div className="text-xs text-slate-500 font-medium ml-11">控制终端</div>
+                </div>
+                <nav className="flex-1 py-5 flex flex-col gap-1.5 px-4">
+                  {tabs.map((tab) => { 
+                    const isDisabled = !isConnected && tab.id !== '首页'; 
+                    return (
+                      <button 
+                        key={tab.id} 
+                        disabled={isDisabled} 
+                        onClick={() => setActiveTab(tab.id)} 
+                        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all pad-btn 
+                          ${isDisabled ? 'opacity-40 cursor-not-allowed text-slate-400' : 'cursor-pointer'} 
+                          ${activeTab === tab.id && !isDisabled ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : (!isDisabled ? 'text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-transparent' : 'border border-transparent')}`}
+                      >
+                        <i className={`fa-solid ${tab.icon} w-5 text-center text-lg`}></i>
+                        <span className="flex-1 text-left">{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+                <div className="p-5 border-t border-slate-100 space-y-4 bg-slate-50/50">
+                   <button 
+                     onClick={() => setShowEStopModal(true)} 
+                     disabled={!isConnected} 
+                     className={`w-full py-3.5 flex items-center justify-center gap-2 text-sm font-bold rounded-xl transition-all shadow-sm pad-btn 
+                       ${isConnected ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-slate-100 text-slate-400 border border-slate-200 opacity-60'}`}
+                   >
+                     <i className="fa-solid fa-power-off"></i> 全局急停
+                   </button>
+                   <div className="flex items-center gap-2.5 justify-center bg-white border border-slate-200 py-2 rounded-lg shadow-sm">
+                     <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-slate-300'}`}></div>
+                     <div className={`text-xs font-bold ${isConnected ? 'text-slate-700' : 'text-slate-400'}`}>{isConnected ? '系统已连接' : '离线状态'}</div>
+                   </div>
+                </div>
+              </aside>
+              
+              {/* Main Area */}
+              <div className="flex-1 flex flex-col min-w-0 bg-slate-50 relative">
+                {/* 极简网格背景 */}
+                <div className="absolute inset-0 pointer-events-none" style={{backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px)', backgroundSize: '30px 30px', zIndex: 0}}></div>
+
+                {activeTab !== '首页' && isConnected && (
+                  <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10 shadow-sm relative">
+                    <h2 className="text-base font-bold text-slate-700 flex items-center gap-2">
+                      <span className="text-blue-500">/</span> {tabs.find(t=>t.id===activeTab).label}
+                    </h2>
+                    <div className="flex items-center gap-4 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                      <span className="flex items-center gap-1.5"><i className="fa-solid fa-battery-half text-green-500"></i> <span className="font-mono font-bold">82%</span></span>
+                      <span className="text-slate-300">|</span>
+                      <span className="flex items-center gap-1.5"><i className="fa-solid fa-network-wired text-blue-500"></i> <span className="font-mono font-bold">192.168.1.105</span></span>
+                    </div>
+                  </header>
+                )}
+                <main className={`flex-1 overflow-auto flex flex-col min-h-0 relative z-10 ${isConnected ? 'p-5 lg:p-6' : 'p-0'}`}>
+                  {activeTab === '首页' && <HomePanel isConnected={isConnected} setIsConnected={setIsConnected} systemMode={systemMode} />}
+                  {activeTab === '控制' && isConnected && <ControlPanel systemMode={systemMode} setSystemMode={setSystemMode} globalActions={globalActions} isConnected={isConnected} />}
+                  {activeTab === '感知' && isConnected && <PerceptionPanel />}
+                  {activeTab === '示教' && isConnected && <TeachingPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
+                  {activeTab === '配置' && isConnected && <ConfigPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
+                </main>
+              </div>
+            </div>
           </div>
         </div>
       );
