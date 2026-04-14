@@ -236,7 +236,8 @@
     // ============================================================================
     const LoginPanel = ({ onLoginSuccess }) => {
       const [view, setView] = useState('login'); 
-      const [loginTab, setLoginTab] = useState('email'); 
+      const [loginTab, setLoginTab] = useState('phone'); 
+      const [phoneLoginType, setPhoneLoginType] = useState('code'); // 'code' or 'password'
       
       const [formData, setFormData] = useState({ account: '', password: '', confirmPassword: '', code: '' });
       const [errorMsg, setErrorMsg] = useState('');
@@ -258,29 +259,62 @@
 
       const handleSendCode = () => {
         if (!formData.account) {
-          setErrorMsg('请输入邮箱或手机号');
+          setErrorMsg('请输入手机号');
           return;
         }
         setCountdown(60);
       };
 
-      const handleLogin = () => {
-        if (loginTab === 'email') {
-          if (formData.account === 'admin' && formData.password === '123456') {
-            onLoginSuccess('Admin');
-          } else if (formData.account === 'admin') {
-            setErrorMsg('账号或密码错误');
-          } else {
-            setErrorMsg('帐号不存在');
-          }
+      const generateRandomUsername = (account, type) => {
+        if (account === 'admin') return 'Admin';
+        
+        let suffix = '';
+        if (type === 'email') {
+          suffix = account.split('@')[0];
+          suffix = suffix.length > 4 ? suffix.slice(-4) : suffix;
         } else {
-          if (!formData.account) {
-             setErrorMsg('请输入邮箱或手机号');
-          } else if (!formData.code) {
-             setErrorMsg('验证码输入错误');
-          } else {
-             onLoginSuccess(formData.account);
+          suffix = account.slice(-4);
+        }
+        return '用户' + suffix;
+      };
+
+      const handleLogin = () => {
+        if (!formData.account) {
+          setErrorMsg(loginTab === 'email' ? '请输入邮箱' : '请输入手机号');
+          return;
+        }
+
+        // 白名单测试账号放行
+        if (formData.account === 'admin' && formData.password === '123456') {
+          onLoginSuccess('Admin');
+          return;
+        }
+
+        if (loginTab === 'email') {
+          if (!formData.password) {
+            setErrorMsg('请输入密码');
+            return;
           }
+          if (formData.account === 'admin' && formData.password !== '123456') {
+            setErrorMsg('账号或密码错误');
+            return;
+          }
+          // 模拟正常登录逻辑并随机命名
+          onLoginSuccess(generateRandomUsername(formData.account, 'email'));
+        } else {
+          // 手机号登录逻辑
+          if (phoneLoginType === 'code') {
+            if (!formData.code) {
+              setErrorMsg('验证码输入错误');
+              return;
+            }
+          } else {
+             if (!formData.password) {
+               setErrorMsg('请输入密码');
+               return;
+             }
+          }
+          onLoginSuccess(generateRandomUsername(formData.account, 'phone'));
         }
       };
 
@@ -330,26 +364,55 @@
             {view === 'login' && !successMsg && (
               <div className="animate-[fadeIn_0.2s_ease-in-out]">
                 <div className="flex bg-slate-100 rounded-lg p-1 mb-6">
-                  <button onClick={() => { setLoginTab('email'); setErrorMsg(''); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${loginTab === 'email' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>账号密码</button>
-                  <button onClick={() => { setLoginTab('phone'); setErrorMsg(''); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${loginTab === 'phone' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>验证码登录</button>
+                  <button onClick={() => { setLoginTab('phone'); setErrorMsg(''); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${loginTab === 'phone' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>手机号登录</button>
+                  <button onClick={() => { setLoginTab('email'); setErrorMsg(''); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${loginTab === 'email' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>邮箱登录</button>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <input name="account" value={formData.account} onChange={handleInputChange} type="text" placeholder={loginTab === 'email' ? "输入邮箱或手机号 (测试用: admin)" : "输入邮箱或手机号"} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-medium transition-all" />
+                    <input 
+                      name="account" 
+                      value={formData.account} 
+                      onChange={handleInputChange} 
+                      type="text" 
+                      placeholder={loginTab === 'email' ? "输入邮箱 (测试用: admin)" : "输入手机号"} 
+                      className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-medium transition-all" 
+                    />
                   </div>
                   
                   {loginTab === 'email' ? (
                     <div>
-                      <input name="password" value={formData.password} onChange={handleInputChange} type="password" placeholder="输入密码 (测试用: 123456)" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
+                      <input 
+                        name="password" 
+                        value={formData.password} 
+                        onChange={handleInputChange} 
+                        type="password" 
+                        placeholder="输入密码 (测试用: 123456)" 
+                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" 
+                      />
                     </div>
                   ) : (
-                    <div className="flex gap-2">
-                      <input name="code" value={formData.code} onChange={handleInputChange} type="text" placeholder="验证码" className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
-                      <button onClick={handleSendCode} disabled={countdown > 0} className="px-4 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition-colors whitespace-nowrap pad-btn">
-                        {countdown > 0 ? `${countdown}s 重发` : '发送验证码'}
-                      </button>
-                    </div>
+                    <>
+                      {phoneLoginType === 'code' ? (
+                        <div className="flex gap-2">
+                          <input name="code" value={formData.code} onChange={handleInputChange} type="text" placeholder="验证码" className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
+                          <button onClick={handleSendCode} disabled={countdown > 0} className="px-4 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition-colors whitespace-nowrap pad-btn">
+                            {countdown > 0 ? `${countdown}s 重发` : '发送验证码'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <input name="password" value={formData.password} onChange={handleInputChange} type="password" placeholder="输入密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
+                        </div>
+                      )}
+                      
+                      {/* 右侧小字切换 */}
+                      <div className="flex justify-end">
+                        <button onClick={() => setPhoneLoginType(phoneLoginType === 'code' ? 'password' : 'code')} className="text-xs text-blue-500 hover:text-blue-700 font-bold transition-colors">
+                          {phoneLoginType === 'code' ? '密码登录' : '验证码登录'}
+                        </button>
+                      </div>
+                    </>
                   )}
 
                   {errorMsg && <div className="text-red-500 text-xs font-bold flex items-center gap-1.5"><i className="fa-solid fa-circle-exclamation"></i> {errorMsg}</div>}
@@ -1645,8 +1708,7 @@
 
       // 菜单与弹窗状态
       const [showUserMenu, setShowUserMenu] = useState(false);
-      const [modals, setModals] = useState({ eStop: false, disconnect: false, modeError: false, userInfo: false, pwd: false, devManage: false });
-      const [editNameInput, setEditNameInput] = useState(''); // 用于修改昵称的输入框状态
+      const [modals, setModals] = useState({ eStop: false, disconnect: false, modeError: false, pwd: false, devManage: false });
       const [unbindConfirmId, setUnbindConfirmId] = useState(null); // 二次确认解绑状态
 
       // 模拟数据库数据
@@ -1688,12 +1750,6 @@
       };
 
       const handleDisconnectConfirm = () => { setActiveRobot(null); setSystemMode('idle'); closeModal('disconnect'); };
-
-      // 修改昵称保存逻辑
-      const handleSaveUserInfo = () => {
-        if(editNameInput.trim()) setCurrentUser(editNameInput.trim());
-        closeModal('userInfo');
-      };
 
       // ============ 模式与急停闭环 ============
       const handleModeChange = (targetMode) => {
@@ -1757,29 +1813,19 @@
                     </div>
                   )}
 
-                  {/* 用户设置占位弹窗 (修改昵称/密码) */}
-                  {(modals.userInfo || modals.pwd) && (
+                  {/* 修改密码弹窗 */}
+                  {modals.pwd && (
                     <div className="absolute inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
                       <div className="bg-white rounded-2xl p-6 w-full max-w-sm flex flex-col shadow-2xl">
-                        <h2 className="text-lg font-bold mb-6">{modals.userInfo ? '修改昵称' : '修改密码'}</h2>
-                        {modals.userInfo ? (
-                           <input 
-                             type="text" 
-                             placeholder="输入新昵称" 
-                             value={editNameInput}
-                             onChange={(e) => setEditNameInput(e.target.value)}
-                             className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold text-slate-700 mb-6" 
-                           />
-                        ) : (
-                           <div className="space-y-3 mb-6">
-                              <input type="password" placeholder="输入原密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
-                              <input type="password" placeholder="输入新密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
-                              <input type="password" placeholder="确认新密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
-                           </div>
-                        )}
+                        <h2 className="text-lg font-bold mb-6">修改密码</h2>
+                        <div className="space-y-3 mb-6">
+                           <input type="password" placeholder="输入原密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                           <input type="password" placeholder="输入新密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                           <input type="password" placeholder="确认新密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                        </div>
                         <div className="flex gap-3">
-                          <button onClick={() => {closeModal('userInfo'); closeModal('pwd');}} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 transition-colors text-slate-700 font-bold rounded-xl pad-btn">取消</button>
-                          <button onClick={modals.userInfo ? handleSaveUserInfo : () => closeModal('pwd')} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold rounded-xl pad-btn shadow-md">保存</button>
+                          <button onClick={() => closeModal('pwd')} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 transition-colors text-slate-700 font-bold rounded-xl pad-btn">取消</button>
+                          <button onClick={() => closeModal('pwd')} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold rounded-xl pad-btn shadow-md">保存</button>
                         </div>
                       </div>
                     </div>
@@ -1840,7 +1886,6 @@
                        {/* Dropdown Menu */}
                        {showUserMenu && (
                          <div className="absolute top-[68px] left-4 right-4 bg-white border border-slate-200 shadow-xl rounded-xl p-1.5 z-50 animate-[fadeIn_0.1s_ease-out]">
-                           <button onClick={() => {setEditNameInput(currentUser); openModal('userInfo'); setShowUserMenu(false);}} className="w-full text-left px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 transition-colors"><i className="fa-regular fa-id-card w-4"></i> 修改昵称</button>
                            <button onClick={() => {openModal('pwd'); setShowUserMenu(false);}} className="w-full text-left px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 transition-colors"><i className="fa-solid fa-lock w-4"></i> 修改密码</button>
                            <button onClick={() => {openModal('devManage'); setShowUserMenu(false);}} className="w-full text-left px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 transition-colors"><i className="fa-solid fa-robot w-4"></i> 已绑定设备</button>
                            <div className="h-px bg-slate-100 my-1"></div>
