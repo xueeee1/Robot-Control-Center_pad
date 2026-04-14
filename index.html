@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GALBOT Control Center - Clean Blue</title>
+  <title>GALBOT Control Center - Industrial Edition</title>
 
   <!-- 引入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -62,7 +62,7 @@
       user-select: none;
       -webkit-user-select: none;
     }
-    .pad-btn:active {
+    .pad-btn:active:not(:disabled) {
       transform: scale(0.96);
       opacity: 0.9;
     }
@@ -148,10 +148,6 @@
 
       return (
         <div className="flex flex-col items-center gap-3 relative">
-          <div className="text-slate-800 font-medium text-sm flex items-center gap-2 relative z-40 bg-white/80 px-3 py-1 rounded-full border border-slate-200 backdrop-blur-md shadow-sm">
-            <i className={`fa-solid ${icon} text-blue-600`}></i> {label}
-          </div>
-          
           <div className="relative">
             {children && (
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
@@ -184,6 +180,11 @@
               </div>
             </div>
           </div>
+          
+          {/* 将文本标签放到摇杆下方 */}
+          <div className="text-slate-800 font-medium text-sm flex items-center gap-2 relative z-40 bg-white/80 px-3 py-1 rounded-full border border-slate-200 backdrop-blur-md shadow-sm">
+            <i className={`fa-solid ${icon} text-blue-600`}></i> {label}
+          </div>
         </div>
       );
     };
@@ -205,10 +206,6 @@
 
       return (
         <div className="flex flex-col items-center gap-3">
-          <div className="text-slate-800 font-medium text-sm flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full border border-slate-200 backdrop-blur-md shadow-sm">
-            <i className="fa-solid fa-crosshairs text-blue-600"></i> {label}
-          </div>
-          {/* 将原本的方形通过 rounded-full 和 overflow-hidden 裁切成完美的圆形转向盘 */}
           <div className="grid grid-cols-3 grid-rows-3 gap-0.5 p-1.5 bg-white/60 border-2 border-slate-200/60 backdrop-blur-md w-36 h-36 rounded-full overflow-hidden shadow-lg">
              {dirs.map(dir => {
                if (dir.id === 'center') return <div key={dir.id} className={dir.classes}></div>;
@@ -227,16 +224,19 @@
                )
              })}
           </div>
+          <div className="text-slate-800 font-medium text-sm flex items-center gap-2 bg-white/80 px-3 py-1 rounded-full border border-slate-200 backdrop-blur-md shadow-sm">
+            <i className="fa-solid fa-crosshairs text-blue-600"></i> {label}
+          </div>
         </div>
       );
     };
 
     // ============================================================================
-    // --- [File: src/components/LoginPanel.jsx (New Component)] ---
+    // --- [File: src/components/LoginPanel.jsx] ---
     // ============================================================================
     const LoginPanel = ({ onLoginSuccess }) => {
-      const [view, setView] = useState('login'); // 'login', 'register', 'forgot'
-      const [loginTab, setLoginTab] = useState('email'); // 'email', 'phone'
+      const [view, setView] = useState('login'); 
+      const [loginTab, setLoginTab] = useState('email'); 
       
       const [formData, setFormData] = useState({ account: '', password: '', confirmPassword: '', code: '' });
       const [errorMsg, setErrorMsg] = useState('');
@@ -253,12 +253,12 @@
 
       const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        setErrorMsg(''); // 用户输入时清空错误
+        setErrorMsg(''); 
       };
 
       const handleSendCode = () => {
         if (!formData.account) {
-          setErrorMsg('请输入账号/手机号');
+          setErrorMsg('请输入邮箱或手机号');
           return;
         }
         setCountdown(60);
@@ -267,27 +267,26 @@
       const handleLogin = () => {
         if (loginTab === 'email') {
           if (formData.account === 'admin' && formData.password === '123456') {
-            onLoginSuccess();
+            onLoginSuccess('Admin');
           } else if (formData.account === 'admin') {
             setErrorMsg('账号或密码错误');
           } else {
             setErrorMsg('帐号不存在');
           }
         } else {
-          // 手机验证码模拟登录
           if (!formData.account) {
-             setErrorMsg('请输入手机号');
+             setErrorMsg('请输入邮箱或手机号');
           } else if (!formData.code) {
              setErrorMsg('验证码输入错误');
           } else {
-             onLoginSuccess();
+             onLoginSuccess(formData.account);
           }
         }
       };
 
       const handleSubmitForm = () => {
         if (!formData.account) {
-          setErrorMsg('请填写账号');
+          setErrorMsg('请填写邮箱或手机号');
           return;
         }
         if (!formData.password) {
@@ -299,7 +298,6 @@
           return;
         }
         
-        // 模拟成功
         setSuccessMsg(view === 'register' ? '帐号注册成功！' : '密码修改成功，请重新登陆');
         setTimeout(() => {
           setSuccessMsg('');
@@ -310,13 +308,11 @@
 
       return (
         <div className="w-full h-full flex items-center justify-center bg-slate-100 animate-[fadeIn_0.3s_ease-in-out] relative">
-          {/* 背景装饰 */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none flex items-center justify-center opacity-30">
              <i className="fa-solid fa-microchip text-[40rem] text-blue-200"></i>
           </div>
 
           <div className="bg-white p-8 md:p-10 rounded-2xl border border-slate-200 shadow-2xl max-w-[400px] w-full flex flex-col relative z-10">
-            
             <div className="flex flex-col items-center mb-8">
               <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white text-2xl shadow-md mb-4">
                 <i className="fa-solid fa-robot"></i>
@@ -331,18 +327,16 @@
               </div>
             )}
 
-            {/* ====== 登录视图 ====== */}
             {view === 'login' && !successMsg && (
               <div className="animate-[fadeIn_0.2s_ease-in-out]">
-                {/* 登录方式切换 */}
                 <div className="flex bg-slate-100 rounded-lg p-1 mb-6">
-                  <button onClick={() => { setLoginTab('email'); setErrorMsg(''); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${loginTab === 'email' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>邮箱/账号登录</button>
+                  <button onClick={() => { setLoginTab('email'); setErrorMsg(''); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${loginTab === 'email' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>账号密码</button>
                   <button onClick={() => { setLoginTab('phone'); setErrorMsg(''); }} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${loginTab === 'phone' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>验证码登录</button>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <input name="account" value={formData.account} onChange={handleInputChange} type="text" placeholder={loginTab === 'email' ? "输入邮箱或账号 (测试用: admin)" : "输入手机号"} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-medium transition-all" />
+                    <input name="account" value={formData.account} onChange={handleInputChange} type="text" placeholder={loginTab === 'email' ? "输入邮箱或手机号 (测试用: admin)" : "输入邮箱或手机号"} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-medium transition-all" />
                   </div>
                   
                   {loginTab === 'email' ? (
@@ -351,9 +345,9 @@
                     </div>
                   ) : (
                     <div className="flex gap-2">
-                      <input name="code" value={formData.code} onChange={handleInputChange} type="text" placeholder="输入验证码" className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
+                      <input name="code" value={formData.code} onChange={handleInputChange} type="text" placeholder="验证码" className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
                       <button onClick={handleSendCode} disabled={countdown > 0} className="px-4 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition-colors whitespace-nowrap pad-btn">
-                        {countdown > 0 ? `${countdown}s 后重发` : '发送验证码'}
+                        {countdown > 0 ? `${countdown}s 重发` : '发送验证码'}
                       </button>
                     </div>
                   )}
@@ -370,7 +364,6 @@
               </div>
             )}
 
-            {/* ====== 注册 / 找回密码视图 ====== */}
             {(view === 'register' || view === 'forgot') && !successMsg && (
               <div className="animate-[fadeIn_0.2s_ease-in-out]">
                 <h3 className="text-sm font-bold text-slate-700 mb-4">{view === 'register' ? '注册新账号' : '找回密码'}</h3>
@@ -381,14 +374,14 @@
                   </div>
                   
                   <div className="flex gap-2">
-                    <input name="code" value={formData.code} onChange={handleInputChange} type="text" placeholder="输入验证码" className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
+                    <input name="code" value={formData.code} onChange={handleInputChange} type="text" placeholder="验证码" className="flex-1 p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
                     <button onClick={handleSendCode} disabled={countdown > 0} className="px-4 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition-colors whitespace-nowrap pad-btn">
-                      {countdown > 0 ? `${countdown}s 后重发` : '获取验证码'}
+                      {countdown > 0 ? `${countdown}s 重发` : '获取验证码'}
                     </button>
                   </div>
 
                   <div>
-                    <input name="password" value={formData.password} onChange={handleInputChange} type="password" placeholder="设置新密码 (8位以上字母和数字)" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
+                    <input name="password" value={formData.password} onChange={handleInputChange} type="password" placeholder="设置新密码 (8位以上)" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
                   </div>
                   <div>
                     <input name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} type="password" placeholder="确认新密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm transition-all" />
@@ -413,18 +406,12 @@
     };
 
     // ============================================================================
-    // --- [File: src/components/ConnectionWizard.jsx (New Component)] ---
+    // --- [File: src/components/ConnectionWizard.jsx] (For un-bound devices) ---
     // ============================================================================
-    const ConnectionWizard = ({ onComplete }) => {
-      const [step, setStep] = useState('search');
-      const [selectedRobot, setSelectedRobot] = useState(null);
+    const ConnectionWizard = ({ robot, onComplete, onCancel }) => {
+      const [step, setStep] = useState('method'); // Skip search, jump to method
 
       useEffect(() => {
-        // 模拟配网流程中的自动跳转环节
-        if (step === 'search') {
-          const timer = setTimeout(() => setStep('select'), 2500);
-          return () => clearTimeout(timer);
-        }
         if (step === 'connecting') {
           const timer = setTimeout(() => setStep('success'), 2000);
           return () => clearTimeout(timer);
@@ -437,71 +424,13 @@
 
       return (
         <div className="w-full h-full flex items-center justify-center bg-transparent animate-[fadeIn_0.3s_ease-in-out]">
-          <div className="bg-white p-8 md:p-10 rounded-2xl border border-slate-200 shadow-xl max-w-md w-full flex flex-col items-center text-center relative overflow-hidden h-[460px]">
+          <div className="bg-white p-8 md:p-10 rounded-2xl border border-slate-200 shadow-xl max-w-md w-full flex flex-col items-center text-center relative z-10 overflow-hidden h-[460px]">
             
-            {/* Step 1: 搜索设备 */}
-            {step === 'search' && (
-              <div className="flex flex-col items-center justify-center h-full w-full animate-[fadeIn_0.5s_ease-in-out]">
-                <div className="relative w-32 h-32 flex items-center justify-center mb-10 mt-6">
-                  {/* 雷达波纹动效 */}
-                  <div className="absolute inset-0 rounded-full border-[3px] border-blue-400/50 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-                  <div className="absolute inset-4 rounded-full border-[3px] border-blue-400/30 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" style={{animationDelay: '0.5s'}}></div>
-                  <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl shadow-[0_0_20px_rgba(37,99,235,0.6)] z-10">
-                    <i className="fa-brands fa-bluetooth-b"></i>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">正在通过蓝牙搜索机器人</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">请确保平板开启蓝牙，且设备已开启并位于控制台附近。<br/>判定是否绑定并启动蓝牙...</p>
-              </div>
-            )}
-
-            {/* Step 2: 发现并选择机器人 */}
-            {step === 'select' && (
-              <div className="flex flex-col items-center h-full w-full animate-[fadeIn_0.3s_ease-in-out]">
-                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-2xl mb-4 shadow-sm border border-blue-100 shrink-0">
-                  <i className="fa-solid fa-list-ul"></i>
-                </div>
-                <h3 className="text-lg font-bold text-slate-800 mb-1">发现设备</h3>
-                <p className="text-xs text-slate-500 mb-6">请选定1个机器人开始配置网络</p>
-                
-                <div className="w-full flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-1 flex-1 max-h-[220px]">
-                  <button onClick={() => { setSelectedRobot('GALBOT-NX1'); setStep('method'); }} className="p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 hover:shadow-md transition-all flex items-center justify-between group text-left">
-                    <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-                        <i className="fa-solid fa-robot text-xl"></i>
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-800 text-[15px]">GALBOT-NX1</div>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5">SN: 2026-X9-001</div>
-                      </div>
-                    </div>
-                    <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-blue-500 transition-colors"></i>
-                  </button>
-                  <button onClick={() => { setSelectedRobot('GALBOT-NX2'); setStep('method'); }} className="p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 hover:shadow-md transition-all flex items-center justify-between group text-left opacity-70">
-                    <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-                        <i className="fa-solid fa-robot text-xl"></i>
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-800 text-[15px]">GALBOT-NX2</div>
-                        <div className="text-xs text-slate-500 font-mono mt-0.5">SN: 2026-X9-002</div>
-                      </div>
-                    </div>
-                    <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-blue-500 transition-colors"></i>
-                  </button>
-                </div>
-                
-                <button onClick={() => setStep('search')} className="mt-5 text-xs text-blue-500 flex items-center gap-1.5 hover:text-blue-700 font-bold transition-colors">
-                  <i className="fa-solid fa-rotate-right"></i> 重新搜索
-                </button>
-              </div>
-            )}
-
-            {/* Step 3: 选择配网方式 */}
+            {/* Step 3: 选择配网方式 (starts here) */}
             {step === 'method' && (
               <div className="flex flex-col items-center h-full w-full animate-[fadeIn_0.3s_ease-in-out]">
                 <h3 className="text-lg font-bold text-slate-800 mb-1">选择配网方式</h3>
-                <p className="text-xs text-slate-500 mb-8">正在为 <span className="font-bold text-slate-700">{selectedRobot}</span> 配置网络</p>
+                <p className="text-xs text-slate-500 mb-8">正在为 <span className="font-bold text-blue-600">{robot?.name}</span> 绑定并配置网络</p>
                 
                 <div className="grid grid-cols-2 gap-4 w-full mb-auto">
                   <button onClick={() => setStep('wifi_form')} className="p-5 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50/50 hover:shadow-md transition-all flex flex-col items-center gap-4 text-center group">
@@ -524,8 +453,8 @@
                   </button>
                 </div>
 
-                <button onClick={() => setStep('select')} className="mt-8 text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1.5 font-bold transition-colors">
-                  <i className="fa-solid fa-arrow-left"></i> 返回上一步
+                <button onClick={onCancel} className="mt-8 text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1.5 font-bold transition-colors pad-btn">
+                  <i className="fa-solid fa-arrow-left"></i> 返回设备中心
                 </button>
               </div>
             )}
@@ -574,7 +503,7 @@
                   <div className="space-y-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-slate-400 font-bold uppercase mb-1">热点名称 (SSID)</span>
-                      <span className="font-mono text-sm font-bold text-slate-800 select-all">GALBOT-AP-{selectedRobot?.split('-')[1] || 'XXXX'}</span>
+                      <span className="font-mono text-sm font-bold text-slate-800 select-all">GALBOT-AP-{robot?.name.split('-').pop() || 'XXXX'}</span>
                     </div>
                     <div className="w-full h-px bg-slate-100"></div>
                     <div className="flex flex-col">
@@ -603,7 +532,7 @@
                     <i className="fa-solid fa-robot text-blue-600 text-2xl"></i>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">机器人配网中</h3>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">配置并绑定中</h3>
                 <p className="text-sm text-slate-500 animate-pulse">正在握手并初始化底层系统服务...</p>
               </div>
             )}
@@ -614,8 +543,8 @@
                 <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center text-white text-5xl mb-6 shadow-[0_0_30px_rgba(34,197,94,0.4)] animate-[bounce_0.5s_ease-out]">
                   <i className="fa-solid fa-check"></i>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800 mb-2">配网完成</h3>
-                <p className="text-sm text-slate-500">即将回到首页并显示机器人信息</p>
+                <h3 className="text-2xl font-bold text-slate-800 mb-2">绑定配网完成</h3>
+                <p className="text-sm text-slate-500">即将进入控制终端</p>
               </div>
             )}
             
@@ -625,11 +554,98 @@
     };
 
     // ============================================================================
+    // --- [File: src/components/DeviceCenter.jsx] ---
+    // ============================================================================
+    const DeviceCenter = ({ boundRobots, discoveredRobots, onConnect, onBindAndConnect }) => {
+      const [connectingId, setConnectingId] = useState(null);
+
+      const handleConnect = (robot) => {
+        setConnectingId(robot.id);
+        setTimeout(() => {
+          setConnectingId(null);
+          onConnect(robot);
+        }, 1000); 
+      };
+
+      return (
+        <div className="w-full h-full flex flex-col p-8 bg-transparent relative animate-[fadeIn_0.3s_ease-in-out]">
+          <div className="max-w-5xl mx-auto w-full flex flex-col h-full gap-8">
+            <header className="shrink-0 flex items-center gap-3 border-b border-slate-200 pb-6">
+              <div className="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center text-xl shadow-sm"><i className="fa-solid fa-server"></i></div>
+              <div><h1 className="text-2xl font-bold text-slate-800">设备管理中心</h1><p className="text-sm text-slate-500 font-medium">请选择要连接的终端设备</p></div>
+            </header>
+
+            <div className="flex-1 flex flex-col min-h-0 gap-8 overflow-y-auto custom-scrollbar pr-2">
+              {/* 我的设备 */}
+              <section>
+                <h2 className="text-sm font-bold text-slate-600 flex items-center gap-2 mb-4"><i className="fa-solid fa-robot"></i> 我的设备 ({boundRobots.length})</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {boundRobots.length === 0 ? <div className="col-span-full py-8 text-center text-sm text-slate-400 bg-white rounded-xl border border-dashed border-slate-300">暂无已绑定的设备</div> : 
+                   boundRobots.map(r => (
+                     <div key={r.id} className={`bg-white p-5 rounded-xl border shadow-sm flex flex-col transition-all ${r.status === 'online' ? 'border-slate-200 hover:border-blue-400' : 'border-slate-200 opacity-60'}`}>
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${r.status === 'online' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'}`}><i className="fa-solid fa-robot"></i></div>
+                            <div>
+                              <div className="font-bold text-slate-800">{r.name}</div>
+                              <div className="text-xs font-mono text-slate-500 mt-0.5">SN: {r.sn}</div>
+                            </div>
+                          </div>
+                          <div className={`w-2.5 h-2.5 rounded-full ${r.status === 'online' ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-slate-300'}`}></div>
+                        </div>
+                        <div className="mt-auto pt-4 border-t border-slate-100">
+                          {r.status === 'online' ? (
+                            <button onClick={() => handleConnect(r)} disabled={connectingId === r.id} className="w-full py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 font-bold text-sm rounded-lg transition-colors pad-btn flex items-center justify-center gap-2">
+                              {connectingId === r.id ? <><i className="fa-solid fa-spinner fa-spin"></i> 连接中</> : '进入控制'}
+                            </button>
+                          ) : (
+                            <button disabled className="w-full py-2 bg-slate-50 text-slate-400 font-bold text-sm rounded-lg border border-slate-200 cursor-not-allowed">设备离线</button>
+                          )}
+                        </div>
+                     </div>
+                   ))}
+                </div>
+              </section>
+
+              {/* 发现新设备 */}
+              <section>
+                <div className="flex justify-between items-end mb-4">
+                  <h2 className="text-sm font-bold text-slate-600 flex items-center gap-2"><i className="fa-brands fa-bluetooth-b text-blue-500"></i> 发现附近设备</h2>
+                  <span className="text-xs text-blue-500 flex items-center gap-1 animate-pulse"><i className="fa-solid fa-satellite-dish"></i> 扫描中...</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {discoveredRobots.map(r => (
+                    <div key={r.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 bg-white border border-slate-200 rounded flex items-center justify-center text-slate-500"><i className="fa-solid fa-microchip"></i></div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-700">{r.name}</div>
+                          <div className="text-xs font-mono text-slate-400 mt-0.5">SN: {r.sn}</div>
+                        </div>
+                      </div>
+                      {r.status === 'unbound' ? (
+                        <button onClick={() => onBindAndConnect(r)} className="w-full py-2 bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 border border-slate-300 font-bold text-xs rounded-lg transition-colors pad-btn flex items-center justify-center gap-2 shadow-sm">
+                           绑定并配网
+                        </button>
+                      ) : (
+                        <button disabled className="w-full py-2 bg-slate-100 text-slate-400 font-bold text-xs rounded-lg border border-slate-200 flex justify-center items-center gap-1.5 cursor-not-allowed">
+                          <i className="fa-solid fa-lock"></i> 已被其他账号绑定
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ============================================================================
     // --- [File: src/components/HomePanel.jsx] ---
     // ============================================================================
-    const HomePanel = ({ isConnected, setIsConnected, systemMode }) => {
-      const [isConnecting, setIsConnecting] = useState(false);
-      
+    const HomePanel = ({ isConnected, systemMode, activeRobot }) => {
       const [hardwareStats, setHardwareStats] = useState({
         orin: { cpu: 42, gpu: 68, ram: '18.4GB', temp: 65 },
         xcu: { freq: 1000, load: 12, ping: 1.2, temp: 42 },
@@ -658,7 +674,7 @@
             { name: '底层运控服务', status: 'running' },
             { name: 'RL运控服务', status: 'running' },
             { name: '上位机通信服务', status: 'running' },
-            { name: 'SLAM服务', status: 'error' } // 默认故障示例
+            { name: 'SLAM服务', status: 'error' } 
           ]
         }
       ]);
@@ -705,7 +721,6 @@
           const currentStatus = newCats[catIndex].items[itemIndex].status;
           let nextStatus = 'running';
           if (currentStatus === 'running') nextStatus = 'stopped';
-          // 修复 SLAM 拨片 Bug：如果是 error 状态，点击后强制停止
           if (currentStatus === 'error') nextStatus = 'stopped'; 
           
           newCats[catIndex].items[itemIndex] = { ...newCats[catIndex].items[itemIndex], status: nextStatus };
@@ -729,15 +744,11 @@
       };
 
       const getSystemModeColor = (mode) => {
-        if (mode.includes('Protect')) return 'text-slate-600 border-slate-300 bg-slate-100';
-        if (mode.includes('Stand')) return 'text-teal-600 border-teal-200 bg-teal-50';
-        if (mode.includes('Motion')) return 'text-blue-600 border-blue-200 bg-blue-50';
+        if (mode.toLowerCase().includes('protect')) return 'text-slate-600 border-slate-300 bg-slate-100';
+        if (mode.toLowerCase().includes('stand')) return 'text-teal-600 border-teal-200 bg-teal-50';
+        if (mode.toLowerCase().includes('motion')) return 'text-blue-600 border-blue-200 bg-blue-50';
         return 'text-blue-600 border-blue-200 bg-blue-50'; 
       };
-
-      if (!isConnected) {
-        return <ConnectionWizard onComplete={() => setIsConnected(true)} />;
-      }
 
       return (
         <div className="w-full flex flex-col gap-5 lg:h-full animate-[fadeIn_0.3s_ease-in-out]">
@@ -748,9 +759,9 @@
                  <i className="fa-solid fa-robot text-2xl"></i>
                </div>
                <div>
-                 <h1 className="text-lg font-bold text-slate-800 tracking-wide mb-0.5">GALBOT-NX1</h1>
+                 <h1 className="text-lg font-bold text-slate-800 tracking-wide mb-0.5">{activeRobot?.name || 'GALBOT-NX1'}</h1>
                  <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-500">
-                   <span>SN: 2026-X9-001</span>
+                   <span>SN: {activeRobot?.sn || '2026-X9-001'}</span>
                    <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                    <span>IP: 192.168.1.105</span>
                  </div>
@@ -956,13 +967,15 @@
     // ============================================================================
     // --- [File: src/components/ControlPanel.jsx] ---
     // ============================================================================
-    const ControlPanel = ({ systemMode, setSystemMode, globalActions, isConnected }) => {
+    const ControlPanel = ({ systemMode, onModeChange, globalActions, isConnected }) => {
       const modes = [
-        { id: 'Protect (零力矩)', label: '零力矩', color: 'text-slate-600 border-slate-300 bg-white/90 shadow-sm' },
-        { id: 'Idle (阻尼)', label: '阻尼', color: 'text-blue-600 border-blue-400 bg-blue-50/90 shadow-md' },
-        { id: 'Stand (站立)', label: '站立', color: 'text-teal-600 border-teal-400 bg-teal-50/90 shadow-md' },
-        { id: 'Motion (运动)', label: '运动', color: 'text-indigo-600 border-indigo-400 bg-indigo-50/90 shadow-md' }
+        { id: 'protect', label: 'PROTECT', color: 'text-slate-600 border-slate-300 bg-white/90 shadow-sm' },
+        { id: 'idle', label: 'IDLE', color: 'text-blue-600 border-blue-400 bg-blue-50/90 shadow-md' },
+        { id: 'stand', label: 'STAND', color: 'text-teal-600 border-teal-400 bg-teal-50/90 shadow-md' },
+        { id: 'motion', label: 'MOTION', color: 'text-indigo-600 border-indigo-400 bg-indigo-50/90 shadow-md' }
       ];
+
+      const isEStopped = systemMode === 'protect';
 
       const [customActions, setCustomActions] = useState([
         { id: 'ca_1', action: '打招呼', color: 'text-slate-700' },
@@ -974,6 +987,7 @@
       const [newActionType, setNewActionType] = useState(globalActions[0]?.name || '');
 
       const triggerAction = (actionName) => {
+        if(isEStopped) return;
         setActiveBtn(actionName);
         setTimeout(() => setActiveBtn(null), 150);
       };
@@ -990,6 +1004,11 @@
           color: 'text-slate-700'
         }]);
         setShowConfigModal(false);
+      };
+
+      const handleModeClick = (targetMode) => {
+        if (isEStopped && targetMode !== 'idle') return;
+        onModeChange(targetMode);
       };
 
       return (
@@ -1031,8 +1050,7 @@
             className="flex-1 rounded-xl border border-slate-200 relative overflow-hidden flex flex-col user-select-none bg-cover bg-center shadow-inner"
             style={{ backgroundImage: "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.4)), url('https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1600&q=80')" }}
           >
-             
-             {/* 控制面板顶部状态栏（悬浮在背景上） */}
+             {/* Top Status */}
              <div className="absolute top-4 left-6 right-6 z-30 flex justify-between pointer-events-none">
                 <div className="flex gap-3 pointer-events-auto">
                    <div className="bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-sm flex items-center gap-2">
@@ -1040,31 +1058,40 @@
                       <span className="text-xs font-bold text-slate-700">{isConnected ? '已连接' : '未连接'}</span>
                    </div>
                    <div className="bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-sm flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-700">模式: {systemMode}</span>
-                   </div>
-                </div>
-                <div className="flex gap-3 pointer-events-auto">
-                   <div className="bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-sm flex items-center gap-2">
-                      <i className="fa-solid fa-battery-half text-green-600"></i>
-                      <span className="text-xs font-bold font-mono text-slate-700">82%</span>
+                      <span className="text-xs font-bold text-slate-700 uppercase">MODE: {systemMode}</span>
                    </div>
                 </div>
              </div>
 
+             {/* Mode Switches */}
              <div className="absolute left-6 top-[55%] transform -translate-y-1/2 z-10 flex flex-col gap-3">
-                 {modes.map(m => (
-                   <button 
-                     key={m.id} 
-                     onClick={() => setSystemMode(m.id)}
-                     className={`w-20 py-3.5 rounded-lg font-bold text-xs transition-all pad-btn border text-center backdrop-blur-md
-                       ${systemMode === m.id ? m.color : 'bg-white/60 text-slate-500 hover:bg-white/80 border-slate-200 shadow-sm'}`}
-                   >
-                     {m.label}
-                   </button>
-                 ))}
+                 {modes.map(m => {
+                   const isActive = systemMode === m.id;
+                   let isDisabled = false;
+                   let isPulsing = false;
+
+                   if (isEStopped) {
+                     if (m.id !== 'idle' && m.id !== 'protect') isDisabled = true;
+                     if (m.id === 'idle') isPulsing = true; // 引导用户点击恢复
+                   }
+
+                   return (
+                     <button 
+                       key={m.id} 
+                       disabled={isDisabled}
+                       onClick={() => handleModeClick(m.id)}
+                       className={`w-28 py-3.5 rounded-lg font-bold text-sm transition-all border text-center backdrop-blur-md relative
+                         ${isActive ? m.color : 'bg-white/60 text-slate-500 hover:bg-white/80 border-slate-200 shadow-sm'}
+                         ${isDisabled ? 'opacity-40 cursor-not-allowed border-dashed' : 'pad-btn'}`}
+                     >
+                       {m.label}
+                       {isPulsing && !isActive && <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-ping"></span>}
+                     </button>
+                   );
+                 })}
              </div>
 
-             <div className="absolute top-[40%] right-10 z-20 transform -translate-y-1/2">
+             <div className={`absolute top-[40%] right-10 z-20 transform -translate-y-1/2 transition-opacity ${isEStopped ? 'opacity-40 pointer-events-none' : ''}`}>
                <DPad8Way label="头部转向" />
              </div>
 
@@ -1072,11 +1099,11 @@
                 <div className="text-white/60 text-6xl mb-2 font-light drop-shadow-md"><i className="fa-solid fa-plus"></i></div>
              </div>
 
-             <div className="absolute bottom-10 left-32 z-20">
+             <div className={`absolute bottom-10 left-32 z-20 transition-opacity ${isEStopped ? 'opacity-40 pointer-events-none' : ''}`}>
                <VirtualJoystick label="行走方向" icon="fa-arrows-up-down-left-right" />
              </div>
 
-             <div className="absolute bottom-10 right-32 z-20 flex items-center justify-center">
+             <div className={`absolute bottom-10 right-32 z-20 flex items-center justify-center transition-opacity ${isEStopped ? 'opacity-40 pointer-events-none' : ''}`}>
                <VirtualJoystick label="姿态转向" icon="fa-rotate">
                  {(() => {
                    const allItems = [...customActions];
@@ -1607,10 +1634,30 @@
     // ============================================================================
     const App = () => {
       const [isLoggedIn, setIsLoggedIn] = useState(false);
-      const [isConnected, setIsConnected] = useState(false);
+      const [currentUser, setCurrentUser] = useState('Admin');
+      
+      const [activeRobot, setActiveRobot] = useState(null); // 当前控制的机器人 (非null代表在主控台)
+      const [configuringRobot, setConfiguringRobot] = useState(null); // 正在走配网流程的机器人
       const [activeTab, setActiveTab] = useState('首页');
-      const [showEStopModal, setShowEStopModal] = useState(false);
-      const [systemMode, setSystemMode] = useState('Idle (阻尼)');
+      
+      // 系统模式状态机: 'protect', 'idle', 'stand', 'motion'
+      const [systemMode, setSystemMode] = useState('idle'); 
+
+      // 菜单与弹窗状态
+      const [showUserMenu, setShowUserMenu] = useState(false);
+      const [modals, setModals] = useState({ eStop: false, disconnect: false, modeError: false, userInfo: false, pwd: false, devManage: false });
+      const [editNameInput, setEditNameInput] = useState(''); // 用于修改昵称的输入框状态
+      const [unbindConfirmId, setUnbindConfirmId] = useState(null); // 二次确认解绑状态
+
+      // 模拟数据库数据
+      const [boundRobots, setBoundRobots] = useState([
+        { id: 'r1', name: 'NX1-1', sn: '2026-X9-001', status: 'online' },
+        { id: 'r2', name: 'NX1-2', sn: '2026-X9-002', status: 'offline' }
+      ]);
+      const [discoveredRobots, setDiscoveredRobots] = useState([
+        { id: 'r3', name: 'GALBOT-NX1-3', sn: '2026-X9-003', status: 'unbound' },
+        { id: 'r4', name: 'GALBOT-NX1-4', sn: '2026-X9-004', status: 'locked' }
+      ]);
 
       const [globalActions, setGlobalActions] = useState([
         { id: 'ga_1', name: '打招呼', isSystem: true },
@@ -1619,118 +1666,267 @@
         { id: 'ga_4', name: '复位', isSystem: true },
       ]);
 
-      const tabs = [
-        { id: '首页', icon: 'fa-house', label: '首页' },
-        { id: '控制', icon: 'fa-gamepad', label: '控制' },
-        { id: '感知', icon: 'fa-eye', label: '感知' },
-        { id: '示教', icon: 'fa-hand-pointer', label: '示教' },
-        { id: '配置', icon: 'fa-sliders', label: '配置' },
-      ];
+      const openModal = (key) => setModals({ ...modals, [key]: true });
+      const closeModal = (key) => setModals({ ...modals, [key]: false });
 
-      const confirmEStop = () => {
-        setShowEStopModal(false);
-        setSystemMode('Protect (零力矩)');
+      // ============ 路由流转逻辑 ============
+      const handleLoginSuccess = (user) => { setCurrentUser(user); setIsLoggedIn(true); };
+      const handleLogout = () => { setIsLoggedIn(false); setActiveRobot(null); setConfiguringRobot(null); setSystemMode('idle'); setShowUserMenu(false); };
+      
+      const handleConnectRobot = (robot) => { setActiveRobot(robot); setActiveTab('首页'); setSystemMode('idle'); };
+      
+      // 点击绑定并配网 -> 进入配网向导
+      const handleStartConfigure = (robot) => { setConfiguringRobot(robot); };
+      
+      // 配网完成 -> 加入列表并进入控制台
+      const handleWizardComplete = () => {
+        const newBot = { ...configuringRobot, name: 'NX1-' + (boundRobots.length + 1), status: 'online' };
+        setBoundRobots([...boundRobots, newBot]);
+        setDiscoveredRobots(discoveredRobots.filter(r => r.id !== configuringRobot.id));
+        setConfiguringRobot(null);
+        handleConnectRobot(newBot);
       };
+
+      const handleDisconnectConfirm = () => { setActiveRobot(null); setSystemMode('idle'); closeModal('disconnect'); };
+
+      // 修改昵称保存逻辑
+      const handleSaveUserInfo = () => {
+        if(editNameInput.trim()) setCurrentUser(editNameInput.trim());
+        closeModal('userInfo');
+      };
+
+      // ============ 模式与急停闭环 ============
+      const handleModeChange = (targetMode) => {
+        if (systemMode === 'protect' && targetMode !== 'idle') return; // protect只能进idle
+        if (systemMode === 'motion' && targetMode === 'idle') {
+          openModal('modeError'); // motion不能直切idle
+          return;
+        }
+        setSystemMode(targetMode);
+      };
+      const handleEStopConfirm = () => { closeModal('eStop'); setSystemMode('protect'); };
+
+      const tabs = [ { id: '首页', icon: 'fa-house' }, { id: '控制', icon: 'fa-gamepad' }, { id: '感知', icon: 'fa-eye' }, { id: '示教', icon: 'fa-hand-pointer' }, { id: '配置', icon: 'fa-sliders' } ];
+      const isEStopped = systemMode === 'protect';
+      
+      // 方便判断当前处于应用哪个阶段
+      const isInMainApp = activeRobot !== null;
+      const isInWizard = configuringRobot !== null && !isInMainApp;
 
       return (
         <div className="flex h-screen w-screen bg-slate-300 items-center justify-center overflow-hidden font-sans text-slate-800 select-none touch-none p-4 md:p-6 lg:p-8">
-          
-          {/* iPad Frame Wrapper */}
           <div className="w-full h-full max-w-[1280px] max-h-[850px] bg-black rounded-[2.5rem] p-3 md:p-4 shadow-2xl relative flex ring-1 ring-black/20">
-            {/* iPad Camera Dot (Landscape Left) */}
             <div className="absolute top-1/2 left-[8px] md:left-[10px] -translate-y-1/2 w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1a1a1a] shadow-[inset_0_0_2px_#000] border border-[#2a2a2a]"></div>
             
-            {/* Inner Screen Area */}
             <div className="flex-1 bg-slate-50 overflow-hidden flex relative rounded-[1.5rem] md:rounded-[1.8rem]">
 
-              {!isLoggedIn ? (
-                <LoginPanel onLoginSuccess={() => setIsLoggedIn(true)} />
+              {/* 路由判断：1. 未登录 -> LoginPanel 全屏 */}
+              {!isLoggedIn ? ( 
+                <LoginPanel onLoginSuccess={handleLoginSuccess} /> 
               ) : (
                 <>
-                  {showEStopModal && (
+                  {/* ====== Modals 全局弹窗 ====== */}
+                  {modals.eStop && (
                     <div className="absolute inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
                       <div className="bg-white border border-slate-200 rounded-2xl p-8 w-full max-w-sm flex flex-col items-center text-center shadow-2xl">
-                        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mb-4 shadow-sm border border-red-100">
-                          <i className="fa-solid fa-triangle-exclamation"></i>
-                        </div>
+                        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mb-4"><i className="fa-solid fa-triangle-exclamation"></i></div>
                         <h2 className="text-lg font-bold text-slate-800 mb-6">确认触发全局急停？</h2>
-                        <div className="flex w-full gap-4">
-                          <button onClick={() => setShowEStopModal(false)} className="flex-1 py-3.5 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl border border-slate-200 hover:bg-slate-200 pad-btn">取消</button>
-                          <button onClick={confirmEStop} className="flex-1 py-3.5 bg-red-600 text-white font-bold text-sm rounded-xl hover:bg-red-700 shadow-md pad-btn">确认急停</button>
+                        <div className="flex w-full gap-4"><button onClick={() => closeModal('eStop')} className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl pad-btn">取消</button><button onClick={handleEStopConfirm} className="flex-1 py-3 bg-red-600 text-white font-bold text-sm rounded-xl pad-btn">确认急停</button></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {modals.disconnect && (
+                    <div className="absolute inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center animate-[fadeIn_0.1s_ease-out]">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-8 w-full max-w-sm flex flex-col shadow-2xl">
+                        <h2 className="text-lg font-bold text-slate-800 mb-2">确认断开连接？</h2>
+                        <p className="text-sm text-slate-500 mb-8 leading-relaxed">断开后将失去对 {activeRobot?.name} 的控制权，并返回设备管理中心。</p>
+                        <div className="flex w-full gap-4"><button onClick={() => closeModal('disconnect')} className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl pad-btn">取消</button><button onClick={handleDisconnectConfirm} className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold text-sm rounded-xl pad-btn">确认断开</button></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {modals.modeError && (
+                    <div className="absolute inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center animate-[fadeIn_0.1s_ease-out]">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-8 w-full max-w-sm flex flex-col items-center text-center shadow-2xl">
+                         <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center text-2xl mb-4"><i className="fa-solid fa-hand-paper"></i></div>
+                         <h2 className="text-lg font-bold text-slate-800 mb-2">无法直接切换至 IDLE</h2>
+                         <p className="text-sm text-slate-500 mb-6">当前处于 MOTION 模式，请先切换至 <strong className="text-teal-600">STAND 模式</strong> 后再进入 IDLE。</p>
+                         <button onClick={() => closeModal('modeError')} className="w-full py-3 bg-blue-600 text-white font-bold text-sm rounded-xl pad-btn">我知道了</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 用户设置占位弹窗 (修改昵称/密码) */}
+                  {(modals.userInfo || modals.pwd) && (
+                    <div className="absolute inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+                      <div className="bg-white rounded-2xl p-6 w-full max-w-sm flex flex-col shadow-2xl">
+                        <h2 className="text-lg font-bold mb-6">{modals.userInfo ? '修改昵称' : '修改密码'}</h2>
+                        {modals.userInfo ? (
+                           <input 
+                             type="text" 
+                             placeholder="输入新昵称" 
+                             value={editNameInput}
+                             onChange={(e) => setEditNameInput(e.target.value)}
+                             className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-bold text-slate-700 mb-6" 
+                           />
+                        ) : (
+                           <div className="space-y-3 mb-6">
+                              <input type="password" placeholder="输入原密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                              <input type="password" placeholder="输入新密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                              <input type="password" placeholder="确认新密码" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500" />
+                           </div>
+                        )}
+                        <div className="flex gap-3">
+                          <button onClick={() => {closeModal('userInfo'); closeModal('pwd');}} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 transition-colors text-slate-700 font-bold rounded-xl pad-btn">取消</button>
+                          <button onClick={modals.userInfo ? handleSaveUserInfo : () => closeModal('pwd')} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 transition-colors text-white font-bold rounded-xl pad-btn shadow-md">保存</button>
                         </div>
                       </div>
                     </div>
                   )}
-                  
-                  {/* Sidebar */}
-                  <aside className="w-56 bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-sm relative">
-                    <div className="p-6 border-b border-slate-100 flex flex-col items-start gap-1.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white shadow-sm">
-                          <i className="fa-solid fa-microchip"></i>
+
+                  {/* 设备管理弹窗 (含解绑) */}
+                  {modals.devManage && (
+                    <div className="absolute inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
+                      <div className="bg-white rounded-2xl p-6 w-full max-w-lg flex flex-col h-[400px] shadow-2xl">
+                        <h2 className="text-lg font-bold mb-4 border-b border-slate-100 pb-3">已绑定设备</h2>
+                        <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                          {boundRobots.map(r => (
+                            <div key={r.id} className="flex justify-between items-center p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                              <div className="flex items-center gap-3">
+                                 <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center"><i className="fa-solid fa-robot"></i></div>
+                                 <div>
+                                    <div className="text-sm font-bold text-slate-800">{r.name} {activeRobot?.id === r.id && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 rounded ml-1 border border-green-200">当前控制</span>}</div>
+                                    <div className="text-xs font-mono text-slate-500">SN: {r.sn}</div>
+                                 </div>
+                              </div>
+                              
+                              {/* 解绑二次确认 */}
+                              {unbindConfirmId === r.id ? (
+                                <div className="flex items-center gap-2 animate-[fadeIn_0.2s_ease-in-out]">
+                                  <span className="text-xs text-slate-500 font-bold">确认解绑?</span>
+                                  <button onClick={() => {
+                                    setBoundRobots(boundRobots.filter(bot => bot.id !== r.id));
+                                    setDiscoveredRobots([...discoveredRobots, {...r, name: `GALBOT-${r.name}`, status: 'unbound'}]);
+                                    setUnbindConfirmId(null);
+                                    if(activeRobot?.id === r.id) { handleDisconnectConfirm(); closeModal('devManage'); }
+                                  }} className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 pad-btn shadow-sm">确认</button>
+                                  <button onClick={() => setUnbindConfirmId(null)} className="px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 pad-btn">取消</button>
+                                </div>
+                              ) : (
+                                <button onClick={() => setUnbindConfirmId(r.id)} className="px-3 py-1.5 bg-white text-red-500 border border-slate-200 text-xs font-bold rounded-lg hover:bg-red-50 pad-btn">解绑</button>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                        <div className="text-lg font-bold text-slate-800 tracking-wide">RobotOS</div>
+                        <button onClick={() => {closeModal('devManage'); setUnbindConfirmId(null);}} className="w-full mt-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl pad-btn border border-slate-200 transition-colors">关闭</button>
                       </div>
-                      <div className="text-xs text-slate-500 font-medium ml-11">控制终端</div>
                     </div>
+                  )}
+
+                  {/* ====== Sidebar ====== */}
+                  <aside className="w-56 bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-sm relative">
+                    {/* User Card - Clean UI */}
+                    <div className="p-4 border-b border-slate-100 flex flex-col relative select-none z-30">
+                       <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition-colors border ${showUserMenu ? 'bg-slate-50 border-slate-200' : 'bg-white border-transparent hover:border-slate-200 hover:bg-slate-50'}`} onClick={() => setShowUserMenu(!showUserMenu)}>
+                         <div className="flex items-center gap-3">
+                           <div className="w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm shadow-sm"><i className="fa-solid fa-user"></i></div>
+                           <div className="flex flex-col text-left">
+                             <span className="text-sm font-bold text-slate-800 leading-none truncate max-w-[120px]">{currentUser}</span>
+                           </div>
+                         </div>
+                       </div>
+                       
+                       {/* Dropdown Menu */}
+                       {showUserMenu && (
+                         <div className="absolute top-[68px] left-4 right-4 bg-white border border-slate-200 shadow-xl rounded-xl p-1.5 z-50 animate-[fadeIn_0.1s_ease-out]">
+                           <button onClick={() => {setEditNameInput(currentUser); openModal('userInfo'); setShowUserMenu(false);}} className="w-full text-left px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 transition-colors"><i className="fa-regular fa-id-card w-4"></i> 修改昵称</button>
+                           <button onClick={() => {openModal('pwd'); setShowUserMenu(false);}} className="w-full text-left px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 transition-colors"><i className="fa-solid fa-lock w-4"></i> 修改密码</button>
+                           <button onClick={() => {openModal('devManage'); setShowUserMenu(false);}} className="w-full text-left px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 transition-colors"><i className="fa-solid fa-robot w-4"></i> 已绑定设备</button>
+                           <div className="h-px bg-slate-100 my-1"></div>
+                           <button onClick={handleLogout} className="w-full text-left px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 transition-colors"><i className="fa-solid fa-arrow-right-from-bracket w-4"></i> 退出登录</button>
+                         </div>
+                       )}
+                    </div>
+
                     <nav className="flex-1 py-5 flex flex-col gap-1.5 px-4">
-                      {tabs.map((tab) => { 
-                        const isDisabled = !isConnected && tab.id !== '首页'; 
-                        return (
-                          <button 
-                            key={tab.id} 
-                            disabled={isDisabled} 
-                            onClick={() => setActiveTab(tab.id)} 
-                            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all pad-btn 
-                              ${isDisabled ? 'opacity-40 cursor-not-allowed text-slate-400' : 'cursor-pointer'} 
-                              ${activeTab === tab.id && !isDisabled ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : (!isDisabled ? 'text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-transparent' : 'border border-transparent')}`}
-                          >
-                            <i className={`fa-solid ${tab.icon} w-5 text-center text-lg`}></i>
-                            <span className="flex-1 text-left">{tab.label}</span>
+                      {tabs.map((tab) => {
+                         // 在设备中心或者向导中，菜单处于置灰禁用状态（保留首页高亮）
+                         const isDisabled = !isInMainApp && tab.id !== '首页';
+                         return (
+                          <button key={tab.id} disabled={isDisabled} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${isDisabled ? 'opacity-40 cursor-not-allowed text-slate-400' : 'cursor-pointer pad-btn'} ${activeTab === tab.id && isInMainApp ? 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100' : (activeTab === tab.id && !isInMainApp ? 'bg-slate-100 text-slate-600 shadow-sm border border-slate-200' : 'text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-transparent')}`}>
+                            <i className={`fa-solid ${tab.icon} w-5 text-center text-lg`}></i><span className="flex-1 text-left">{tab.id}</span>
                           </button>
-                        );
+                         );
                       })}
                     </nav>
-                    <div className="p-5 border-t border-slate-100 space-y-4 bg-slate-50/50">
-                       <button 
-                         onClick={() => setShowEStopModal(true)} 
-                         disabled={!isConnected} 
-                         className={`w-full py-3.5 flex items-center justify-center gap-2 text-sm font-bold rounded-xl transition-all shadow-sm pad-btn 
-                           ${isConnected ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-slate-100 text-slate-400 border border-slate-200 opacity-60'}`}
-                       >
+                    <div className="p-5 border-t border-slate-100 space-y-3 bg-slate-50/50">
+                       <button onClick={() => openModal('eStop')} disabled={!isInMainApp || isEStopped} className={`w-full py-3.5 flex items-center justify-center gap-2 text-sm font-bold rounded-xl transition-all shadow-sm pad-btn ${isInMainApp && !isEStopped ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-slate-100 text-slate-400 border border-slate-200 opacity-60'}`}>
                          <i className="fa-solid fa-power-off"></i> 全局急停
                        </button>
-                       <div className="flex items-center gap-2.5 justify-center bg-white border border-slate-200 py-2 rounded-lg shadow-sm">
-                         <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-slate-300'}`}></div>
-                         <div className={`text-xs font-bold ${isConnected ? 'text-slate-700' : 'text-slate-400'}`}>{isConnected ? '系统已连接' : '离线状态'}</div>
+                       
+                       <div className="flex items-center justify-between bg-white border border-slate-200 py-2 px-3 rounded-lg shadow-sm h-10">
+                         <div className="flex items-center gap-2">
+                           <div className={`w-2 h-2 rounded-full ${isInMainApp ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-slate-300'}`}></div>
+                           <div className={`text-xs font-bold ${isInMainApp ? 'text-slate-700' : 'text-slate-400'}`}>{isInMainApp ? '系统已连接' : '未连接设备'}</div>
+                         </div>
+                         {isInMainApp && (
+                           <button onClick={() => openModal('disconnect')} className="text-slate-400 hover:text-red-500 transition-colors px-1.5 rounded-md hover:bg-red-50 font-bold text-xs" title="断开连接">
+                             断开
+                           </button>
+                         )}
                        </div>
                     </div>
                   </aside>
                   
-                  {/* Main Area */}
+                  {/* ====== Main Content Area (Dynamic based on route) ====== */}
                   <div className="flex-1 flex flex-col min-w-0 bg-slate-50 relative">
-                    {/* 极简网格背景 */}
                     <div className="absolute inset-0 pointer-events-none" style={{backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px)', backgroundSize: '30px 30px', zIndex: 0}}></div>
 
-                    {activeTab !== '首页' && isConnected && (
-                      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10 shadow-sm relative">
-                        <h2 className="text-base font-bold text-slate-700 flex items-center gap-2">
-                          <span className="text-blue-500">/</span> {tabs.find(t=>t.id===activeTab).label}
-                        </h2>
-                        <div className="flex items-center gap-4 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-                          <span className="flex items-center gap-1.5"><i className="fa-solid fa-battery-half text-green-500"></i> <span className="font-mono font-bold">82%</span></span>
-                          <span className="text-slate-300">|</span>
-                          <span className="flex items-center gap-1.5"><i className="fa-solid fa-network-wired text-blue-500"></i> <span className="font-mono font-bold">192.168.1.105</span></span>
-                        </div>
-                      </header>
+                    {/* 路由 2：在走配网向导 */}
+                    {isInWizard ? (
+                      <div className="relative z-10 w-full h-full">
+                        <ConnectionWizard robot={configuringRobot} onComplete={handleWizardComplete} onCancel={() => setConfiguringRobot(null)} />
+                      </div>
+                    ) : 
+                    
+                    /* 路由 3：未进入控制台，显示设备中心 */
+                    !isInMainApp ? (
+                      <div className="relative z-10 w-full h-full">
+                        <DeviceCenter boundRobots={boundRobots} discoveredRobots={discoveredRobots} onConnect={handleConnectRobot} onBindAndConnect={handleStartConfigure} />
+                      </div>
+                    ) : 
+
+                    /* 路由 4：进入正式控制台主页 */
+                    (
+                      <>
+                        {/* 🚨 E-Stop Banner 警示横幅 */}
+                        {isEStopped && (
+                          <div className="bg-red-500 text-white px-4 py-3 text-xs md:text-sm font-bold flex items-center justify-center gap-2 shadow-md relative z-20 shrink-0">
+                            <i className="fa-solid fa-triangle-exclamation animate-pulse text-lg"></i> 
+                            <span>🚨 机器人处于急停保护状态，已进入阻尼模式。请解除异常后切换模式以恢复正常控制。</span>
+                          </div>
+                        )}
+
+                        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10 shadow-sm relative">
+                          <h2 className="text-base font-bold text-slate-700 flex items-center gap-2"><span className="text-blue-500">/</span> {activeTab}</h2>
+                          <div className="flex items-center gap-4 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                            <span className="flex items-center gap-1.5"><i className="fa-solid fa-robot text-blue-600"></i> <span className="font-bold">{activeRobot?.name}</span></span>
+                            <span className="text-slate-300">|</span>
+                            <span className="flex items-center gap-1.5"><i className="fa-solid fa-battery-half text-green-500"></i> <span className="font-mono font-bold">82%</span></span>
+                          </div>
+                        </header>
+                        
+                        <main className="flex-1 overflow-auto flex flex-col min-h-0 relative z-10 p-5 lg:p-6">
+                          {/* 全量渲染所有的组件面板 */}
+                          {activeTab === '首页' && <HomePanel isConnected={true} systemMode={systemMode.toUpperCase()} activeRobot={activeRobot} />}
+                          {activeTab === '控制' && <ControlPanel systemMode={systemMode} onModeChange={handleModeChange} globalActions={globalActions} isConnected={true} />}
+                          {activeTab === '感知' && <PerceptionPanel />}
+                          {activeTab === '示教' && <TeachingPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
+                          {activeTab === '配置' && <ConfigPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
+                        </main>
+                      </>
                     )}
-                    <main className={`flex-1 overflow-auto flex flex-col min-h-0 relative z-10 ${isConnected ? 'p-5 lg:p-6' : 'p-0'}`}>
-                      {activeTab === '首页' && <HomePanel isConnected={isConnected} setIsConnected={setIsConnected} systemMode={systemMode} />}
-                      {activeTab === '控制' && isConnected && <ControlPanel systemMode={systemMode} setSystemMode={setSystemMode} globalActions={globalActions} isConnected={isConnected} />}
-                      {activeTab === '感知' && isConnected && <PerceptionPanel />}
-                      {activeTab === '示教' && isConnected && <TeachingPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
-                      {activeTab === '配置' && isConnected && <ConfigPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
-                    </main>
                   </div>
                 </>
               )}
