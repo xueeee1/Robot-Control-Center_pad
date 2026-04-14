@@ -472,7 +472,9 @@
     // --- [File: src/components/ConnectionWizard.jsx] (For un-bound devices) ---
     // ============================================================================
     const ConnectionWizard = ({ robot, onComplete, onCancel }) => {
-      const [step, setStep] = useState('method'); // Skip search, jump to method
+      const [step, setStep] = useState('method'); 
+      // 记录选择的网络模式，用于传递给底层屏蔽特定功能
+      const [selectedMethod, setSelectedMethod] = useState('wifi'); 
 
       useEffect(() => {
         if (step === 'connecting') {
@@ -480,10 +482,11 @@
           return () => clearTimeout(timer);
         }
         if (step === 'success') {
-          const timer = setTimeout(() => onComplete(), 1500);
+          // 将配网模式回传，以便在 AP 模式下屏蔽需联网的功能
+          const timer = setTimeout(() => onComplete(selectedMethod), 1500);
           return () => clearTimeout(timer);
         }
-      }, [step, onComplete]);
+      }, [step, onComplete, selectedMethod]);
 
       return (
         <div className="w-full h-full flex items-center justify-center bg-transparent animate-[fadeIn_0.3s_ease-in-out]">
@@ -496,16 +499,16 @@
                 <p className="text-xs text-slate-500 mb-8">正在为 <span className="font-bold text-blue-600">{robot?.name}</span> 绑定并配置网络</p>
                 
                 <div className="grid grid-cols-2 gap-4 w-full mb-auto">
-                  <button onClick={() => setStep('wifi_form')} className="p-5 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50/50 hover:shadow-md transition-all flex flex-col items-center gap-4 text-center group">
+                  <button onClick={() => { setSelectedMethod('wifi'); setStep('wifi_form'); }} className="p-5 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50/50 hover:shadow-md transition-all flex flex-col items-center gap-4 text-center group">
                     <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm border border-blue-100 group-hover:scale-110 transition-transform">
                       <i className="fa-solid fa-wifi text-2xl"></i>
                     </div>
                     <div>
                       <div className="font-bold text-sm text-slate-800 mb-1">Wi-Fi 模式</div>
-                      <div className="text-[11px] text-slate-500 leading-tight">连接本地局域网<br/>平板和机器人处同一网络</div>
+                      <div className="text-[11px] text-slate-500 leading-tight">连接本地局域网<br/>支持云端功能访问</div>
                     </div>
                   </button>
-                  <button onClick={() => setStep('ap_connect')} className="p-5 bg-white border border-slate-200 rounded-xl hover:border-teal-500 hover:bg-teal-50/50 hover:shadow-md transition-all flex flex-col items-center gap-4 text-center group">
+                  <button onClick={() => { setSelectedMethod('ap'); setStep('ap_connect'); }} className="p-5 bg-white border border-slate-200 rounded-xl hover:border-teal-500 hover:bg-teal-50/50 hover:shadow-md transition-all flex flex-col items-center gap-4 text-center group">
                     <div className="w-14 h-14 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shadow-sm border border-teal-100 group-hover:scale-110 transition-transform">
                       <i className="fa-solid fa-mobile-screen text-2xl"></i>
                     </div>
@@ -712,16 +715,17 @@
       const [hardwareStats, setHardwareStats] = useState({
         orin: { cpu: 42, gpu: 68, ram: '18.4GB', temp: 65 },
         xcu: { freq: 1000, load: 12, ping: 1.2, temp: 42 },
-        bms: { voltage: 48.2, current: 15.4, temp: 35, remaining: '1h 20m' }
+        bms: { voltage: 48.2, current: 15.4, temp: 35 } // 删除了 remaining
       });
 
+      // 规范化 J1-J30 关节命名
       const [jointGroups, setJointGroups] = useState([
-        { name: '头部 (3-DoF)', items: [{id:'h_1', name:'Yaw'},{id:'h_2', name:'Pitch'},{id:'h_3', name:'Roll'}] },
-        { name: '左臂 (7-DoF)', items: [{id:'la_1', name:'Shoulder Pitch'}, {id:'la_2', name:'Shoulder Roll'}, {id:'la_3', name:'Shoulder Yaw'}, {id:'la_4', name:'Elbow Pitch'}, {id:'la_5', name:'Wrist Yaw'}, {id:'la_6', name:'Wrist Pitch'}, {id:'la_7', name:'Wrist Roll'}] },
-        { name: '右臂 (7-DoF)', items: [{id:'ra_1', name:'Shoulder Pitch'}, {id:'ra_2', name:'Shoulder Roll'}, {id:'ra_3', name:'Shoulder Yaw'}, {id:'ra_4', name:'Elbow Pitch'}, {id:'ra_5', name:'Wrist Yaw'}, {id:'ra_6', name:'Wrist Pitch'}, {id:'ra_7', name:'Wrist Roll'}] },
-        { name: '腰部 (3-DoF)', items: [{id:'w_1', name:'Yaw'}, {id:'w_2', name:'Pitch'}, {id:'w_3', name:'Roll'}] },
-        { name: '左腿 (6-DoF)', items: [{id:'ll_1', name:'Hip Pitch'}, {id:'ll_2', name:'Hip Roll'}, {id:'ll_3', name:'Hip Yaw'}, {id:'ll_4', name:'Knee Pitch'}, {id:'ll_5', name:'Ankle Pitch'}, {id:'ll_6', name:'Ankle Roll'}] },
-        { name: '右腿 (6-DoF)', items: [{id:'rl_1', name:'Hip Pitch'}, {id:'rl_2', name:'Hip Roll'}, {id:'rl_3', name:'Hip Yaw'}, {id:'rl_4', name:'Knee Pitch'}, {id:'rl_5', name:'Ankle Pitch'}, {id:'rl_6', name:'Ankle Roll'}] },
+        { name: '头部 (3-DoF)', items: [{id:'h_1', name:'J1-头部偏航'},{id:'h_2', name:'J2-头部俯仰'},{id:'h_3', name:'J3-头部横滚'}] },
+        { name: '左臂 (7-DoF)', items: [{id:'la_1', name:'J4-肩俯仰'}, {id:'la_2', name:'J5-肩横滚'}, {id:'la_3', name:'J6-肩偏航'}, {id:'la_4', name:'J7-肘俯仰'}, {id:'la_5', name:'J8-腕偏航'}, {id:'la_6', name:'J9-腕俯仰'}, {id:'la_7', name:'J10-腕横滚'}] },
+        { name: '右臂 (7-DoF)', items: [{id:'ra_1', name:'J11-肩俯仰'}, {id:'ra_2', name:'J12-肩横滚'}, {id:'ra_3', name:'J13-肩偏航'}, {id:'ra_4', name:'J14-肘俯仰'}, {id:'ra_5', name:'J15-腕偏航'}, {id:'ra_6', name:'J16-腕俯仰'}, {id:'ra_7', name:'J17-腕横滚'}] },
+        { name: '腰部 (1-DoF)', items: [{id:'w_1', name:'J18-腰部偏航'}] },
+        { name: '左腿 (6-DoF)', items: [{id:'ll_1', name:'J19-髋俯仰'}, {id:'ll_2', name:'J20-髋横滚'}, {id:'ll_3', name:'J21-髋偏航'}, {id:'ll_4', name:'J22-膝俯仰'}, {id:'ll_5', name:'J23-踝俯仰'}, {id:'ll_6', name:'J24-踝横滚'}] },
+        { name: '右腿 (6-DoF)', items: [{id:'rl_1', name:'J25-髋俯仰'}, {id:'rl_2', name:'J26-髋横滚'}, {id:'rl_3', name:'J27-髋偏航'}, {id:'rl_4', name:'J28-膝俯仰'}, {id:'rl_5', name:'J29-踝俯仰'}, {id:'rl_6', name:'J30-踝横滚'}] },
       ].map(g => ({...g, items: g.items.map(j => ({
         ...j, 
         temp: Math.floor(35 + Math.random()*15), 
@@ -901,9 +905,9 @@
                   <span className="text-2xl font-bold font-mono text-blue-600">{hardwareStats.bms.current.toFixed(1)}A</span>
                 </div>
               </div>
+              {/* 删除预估时长，仅显示核心温度 */}
               <div className="flex justify-between items-center pt-3 border-t border-slate-100 mt-auto">
-                <div className="text-xs font-medium text-slate-500 flex items-center gap-1.5"><i className="fa-regular fa-hourglass-half"></i> 预估 {hardwareStats.bms.remaining}</div>
-                <div className="text-xs font-medium text-slate-500">温度 <span className="font-mono font-bold text-slate-700">{hardwareStats.bms.temp}°C</span></div>
+                <div className="text-xs font-medium text-slate-500">电池核心温度 <span className="font-mono font-bold text-slate-700">{hardwareStats.bms.temp}°C</span></div>
               </div>
             </div>
 
@@ -913,12 +917,29 @@
                 <button className="text-xs text-blue-500 hover:text-blue-600 font-medium">导出记录</button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-1">
-                {alarmHistory.map(alarm => (
-                   <div key={alarm.id} className={`p-2 rounded-lg border text-xs flex flex-col shrink-0 ${alarm.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' : alarm.type === 'warning' ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
-                     <div className="flex justify-between font-mono font-bold mb-1"><span>{alarm.code}</span><span className="opacity-70 font-normal">{alarm.time}</span></div>
-                     <div className="truncate opacity-90">{alarm.desc}</div>
-                   </div>
-                ))}
+                {alarmHistory.map(alarm => {
+                   let colorClass = 'bg-slate-50 border-slate-200 text-slate-600';
+                   let iconClass = 'fa-solid fa-circle-info text-blue-500';
+                   if (alarm.type === 'error') {
+                     colorClass = 'bg-red-50 border-red-200 text-red-700';
+                     iconClass = 'fa-solid fa-circle-xmark text-red-500';
+                   } else if (alarm.type === 'warning') {
+                     colorClass = 'bg-orange-50 border-orange-200 text-orange-700';
+                     iconClass = 'fa-solid fa-triangle-exclamation text-orange-500';
+                   } else {
+                     colorClass = 'bg-blue-50 border-blue-200 text-blue-700';
+                   }
+                   
+                   return (
+                     <div key={alarm.id} className={`p-2.5 rounded-lg border text-xs flex flex-col shrink-0 ${colorClass}`}>
+                       <div className="flex justify-between font-mono font-bold mb-1 items-center">
+                         <span className="flex items-center gap-1.5"><i className={iconClass}></i> {alarm.code}</span>
+                         <span className="opacity-70 font-normal">{alarm.time}</span>
+                       </div>
+                       <div className="truncate opacity-90 ml-5">{alarm.desc}</div>
+                     </div>
+                   );
+                })}
               </div>
             </div>
 
@@ -995,7 +1016,7 @@
             <div className="lg:col-span-8 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[500px] lg:h-auto min-h-0 shrink-0">
               <div className="flex justify-between items-center mb-4 shrink-0 border-b border-slate-100 pb-3">
                 <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                  关节电机实时状态 (32 DoF)
+                  关节电机实时状态 (30 DoF)
                 </h2>
               </div>
               
@@ -1007,7 +1028,7 @@
                        {group.items.map(joint => (
                          <div key={joint.id} className="flex flex-col p-2.5 bg-white rounded-lg border border-slate-200 shadow-sm">
                            <div className="flex justify-between items-center mb-1.5">
-                             <span className="text-xs font-medium text-slate-700 truncate mr-2">{joint.name}</span>
+                             <span className="text-xs font-medium text-slate-700 truncate mr-2" title={joint.name}>{joint.name}</span>
                              <div className={`w-1.5 h-1.5 rounded-full ${joint.status === 'ok' ? 'bg-green-500' : 'bg-red-500'}`}></div>
                            </div>
                            <div className="flex items-center justify-between">
@@ -1364,10 +1385,10 @@
       const [newActionName, setNewActionName] = useState('');
 
       const jointGroups = [
-        { id: 'head', name: '头部', items: [{id:'h_yaw', name:'偏航', min:-90, max:90},{id:'h_pitch', name:'俯仰', min:-45, max:45},{id:'h_roll', name:'横滚', min:-30, max:30}] },
-        { id: 'l_arm', name: '左臂', items: [{id:'la_s_pitch', name:'肩俯仰', min:-180, max:180},{id:'la_s_roll', name:'肩横滚', min:-90, max:90},{id:'la_s_yaw', name:'肩偏航', min:-90, max:90},{id:'la_e_pitch', name:'肘俯仰', min:-150, max:0},{id:'la_w_yaw', name:'腕偏航', min:-90, max:90},{id:'la_w_pitch', name:'腕俯仰', min:-90, max:90},{id:'la_w_roll', name:'腕横滚', min:-90, max:90}] },
-        { id: 'r_arm', name: '右臂', items: [{id:'ra_s_pitch', name:'肩俯仰', min:-180, max:180},{id:'ra_s_roll', name:'肩横滚', min:-90, max:90},{id:'ra_s_yaw', name:'肩偏航', min:-90, max:90},{id:'ra_e_pitch', name:'肘俯仰', min:-150, max:0},{id:'ra_w_yaw', name:'腕偏航', min:-90, max:90},{id:'ra_w_pitch', name:'腕俯仰', min:-90, max:90},{id:'ra_w_roll', name:'腕横滚', min:-90, max:90}] },
-        { id: 'torso', name: '腰部', items: [{id:'t_yaw', name:'偏航', min:-90, max:90}] },
+        { id: 'head', name: '头部', items: [{id:'h_yaw', name:'J1-头部偏航', min:-90, max:90},{id:'h_pitch', name:'J2-头部俯仰', min:-45, max:45},{id:'h_roll', name:'J3-头部横滚', min:-30, max:30}] },
+        { id: 'l_arm', name: '左臂', items: [{id:'la_s_pitch', name:'J4-肩俯仰', min:-180, max:180},{id:'la_s_roll', name:'J5-肩横滚', min:-90, max:90},{id:'la_s_yaw', name:'J6-肩偏航', min:-90, max:90},{id:'la_e_pitch', name:'J7-肘俯仰', min:-150, max:0},{id:'la_w_yaw', name:'J8-腕偏航', min:-90, max:90},{id:'la_w_pitch', name:'J9-腕俯仰', min:-90, max:90},{id:'la_w_roll', name:'J10-腕横滚', min:-90, max:90}] },
+        { id: 'r_arm', name: '右臂', items: [{id:'ra_s_pitch', name:'J11-肩俯仰', min:-180, max:180},{id:'ra_s_roll', name:'J12-肩横滚', min:-90, max:90},{id:'ra_s_yaw', name:'J13-肩偏航', min:-90, max:90},{id:'ra_e_pitch', name:'J14-肘俯仰', min:-150, max:0},{id:'ra_w_yaw', name:'J15-腕偏航', min:-90, max:90},{id:'ra_w_pitch', name:'J16-腕俯仰', min:-90, max:90},{id:'ra_w_roll', name:'J17-腕横滚', min:-90, max:90}] },
+        { id: 'torso', name: '腰部', items: [{id:'t_yaw', name:'J18-腰部偏航', min:-90, max:90}] },
       ];
 
       const initialAngles = { 'h_yaw':0,'h_pitch':0,'h_roll':0,'la_s_pitch':0,'la_s_roll':20,'la_s_yaw':0,'la_e_pitch':-30,'la_w_yaw':0,'la_w_pitch':0,'la_w_roll':0,'ra_s_pitch':0,'ra_s_roll':-20,'ra_s_yaw':0,'ra_e_pitch':-30,'ra_w_yaw':0,'ra_w_pitch':0,'ra_w_roll':0,'t_yaw':0 };
@@ -1472,7 +1493,7 @@
                     <div className="space-y-4">
                       {group.items.map(joint => (
                         <div key={joint.id} className="flex flex-col gap-1.5">
-                          <div className="flex justify-between items-center text-xs"><span className="text-slate-600 font-medium">{joint.name}</span><span className="font-mono font-bold text-blue-600">{jointAngles[joint.id]?.toFixed(1)}°</span></div>
+                          <div className="flex justify-between items-center text-xs"><span className="text-slate-600 font-medium" title={joint.name}>{joint.name}</span><span className="font-mono font-bold text-blue-600">{jointAngles[joint.id]?.toFixed(1)}°</span></div>
                           <input type="range" min={joint.min} max={joint.max} step="0.5" value={jointAngles[joint.id] || 0} onChange={(e) => handleAngleChange(joint.id, parseFloat(e.target.value))} />
                         </div>
                       ))}
@@ -1550,7 +1571,7 @@
     // ============================================================================
     // --- [File: src/components/ConfigPanel.jsx] ---
     // ============================================================================
-    const ConfigPanel = ({ globalActions, setGlobalActions }) => {
+    const ConfigPanel = ({ globalActions, setGlobalActions, connectionType }) => {
       const [activeSubTab, setActiveSubTab] = useState('network');
       const [rcConnected, setRcConnected] = useState(true);
       const [isPairing, setIsPairing] = useState(false);
@@ -1670,20 +1691,15 @@
               <div className="max-w-4xl mx-auto space-y-6">
                 <h2 className="text-lg font-bold text-slate-800 border-b border-slate-200 pb-3">系统与运维</h2>
                 <div className="grid grid-cols-2 gap-5">
-                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center gap-3 pad-btn cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-colors">
+                  <div className={`bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center gap-3 transition-colors ${connectionType === 'ap' ? 'opacity-50 cursor-not-allowed' : 'pad-btn cursor-pointer hover:border-blue-400 hover:bg-blue-50/30'}`}>
                     <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl"><i className="fa-solid fa-cloud-arrow-up"></i></div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-800 mb-1">离线固件升级 (OTA)</h3>
-                      <p className="text-xs font-medium text-slate-500">上传 .bin 固件文件进行系统迭代</p>
+                      <h3 className="text-sm font-bold text-slate-800 mb-1">云端系统升级 (OTA)</h3>
+                      <p className="text-xs font-medium text-slate-500">从云端下载并更新最新固件</p>
+                      {connectionType === 'ap' && <p className="text-xs font-bold text-red-500 mt-2">AP直连模式下不可用，请连接Wi-Fi</p>}
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center gap-3 pad-btn cursor-pointer hover:border-red-400 hover:bg-red-50/30 transition-colors">
-                    <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-xl"><i className="fa-solid fa-rotate-left"></i></div>
-                    <div>
-                      <h3 className="text-sm font-bold text-red-600 mb-1">恢复出厂设置</h3>
-                      <p className="text-xs font-medium text-slate-500">清除所有用户配置与标定数据</p>
-                    </div>
-                  </div>
+                  {/* 已根据要求删除恢复出厂设置 */}
                 </div>
               </div>
             )}
@@ -1701,6 +1717,7 @@
       
       const [activeRobot, setActiveRobot] = useState(null); // 当前控制的机器人 (非null代表在主控台)
       const [configuringRobot, setConfiguringRobot] = useState(null); // 正在走配网流程的机器人
+      const [connectionType, setConnectionType] = useState('wifi'); // 网络连接模式 'wifi' | 'ap'
       const [activeTab, setActiveTab] = useState('首页');
       
       // 系统模式状态机: 'protect', 'idle', 'stand', 'motion'
@@ -1713,8 +1730,8 @@
 
       // 模拟数据库数据
       const [boundRobots, setBoundRobots] = useState([
-        { id: 'r1', name: 'NX1-1', sn: '2026-X9-001', status: 'online' },
-        { id: 'r2', name: 'NX1-2', sn: '2026-X9-002', status: 'offline' }
+        { id: 'r1', name: 'NX1-1', sn: '2026-X9-001', status: 'online', connType: 'wifi' },
+        { id: 'r2', name: 'NX1-2', sn: '2026-X9-002', status: 'offline', connType: 'wifi' }
       ]);
       const [discoveredRobots, setDiscoveredRobots] = useState([
         { id: 'r3', name: 'GALBOT-NX1-3', sn: '2026-X9-003', status: 'unbound' },
@@ -1735,14 +1752,19 @@
       const handleLoginSuccess = (user) => { setCurrentUser(user); setIsLoggedIn(true); };
       const handleLogout = () => { setIsLoggedIn(false); setActiveRobot(null); setConfiguringRobot(null); setSystemMode('idle'); setShowUserMenu(false); };
       
-      const handleConnectRobot = (robot) => { setActiveRobot(robot); setActiveTab('首页'); setSystemMode('idle'); };
+      const handleConnectRobot = (robot) => { 
+        setActiveRobot(robot); 
+        setConnectionType(robot.connType || 'wifi');
+        setActiveTab('首页'); 
+        setSystemMode('idle'); 
+      };
       
       // 点击绑定并配网 -> 进入配网向导
       const handleStartConfigure = (robot) => { setConfiguringRobot(robot); };
       
       // 配网完成 -> 加入列表并进入控制台
-      const handleWizardComplete = () => {
-        const newBot = { ...configuringRobot, name: 'NX1-' + (boundRobots.length + 1), status: 'online' };
+      const handleWizardComplete = (method) => {
+        const newBot = { ...configuringRobot, name: 'NX1-' + (boundRobots.length + 1), status: 'online', connType: method };
         setBoundRobots([...boundRobots, newBot]);
         setDiscoveredRobots(discoveredRobots.filter(r => r.id !== configuringRobot.id));
         setConfiguringRobot(null);
@@ -1956,6 +1978,7 @@
                         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10 shadow-sm relative">
                           <h2 className="text-base font-bold text-slate-700 flex items-center gap-2"><span className="text-blue-500">/</span> {activeTab}</h2>
                           <div className="flex items-center gap-4 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                            {connectionType === 'ap' && <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded text-[10px] font-bold border border-teal-200">AP 直连</span>}
                             <span className="flex items-center gap-1.5"><i className="fa-solid fa-robot text-blue-600"></i> <span className="font-bold">{activeRobot?.name}</span></span>
                             <span className="text-slate-300">|</span>
                             <span className="flex items-center gap-1.5"><i className="fa-solid fa-battery-half text-green-500"></i> <span className="font-mono font-bold">82%</span></span>
@@ -1968,7 +1991,7 @@
                           {activeTab === '控制' && <ControlPanel systemMode={systemMode} onModeChange={handleModeChange} globalActions={globalActions} isConnected={true} />}
                           {activeTab === '感知' && <PerceptionPanel />}
                           {activeTab === '示教' && <TeachingPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
-                          {activeTab === '配置' && <ConfigPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
+                          {activeTab === '配置' && <ConfigPanel globalActions={globalActions} setGlobalActions={setGlobalActions} connectionType={connectionType} />}
                         </main>
                       </>
                     )}
