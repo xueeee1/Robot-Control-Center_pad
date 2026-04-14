@@ -269,7 +269,7 @@
           if (formData.account === 'admin' && formData.password === '123456') {
             onLoginSuccess();
           } else if (formData.account === 'admin') {
-            setErrorMsg('密码错误');
+            setErrorMsg('账号或密码错误');
           } else {
             setErrorMsg('帐号不存在');
           }
