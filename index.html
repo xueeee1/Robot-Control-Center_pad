@@ -469,11 +469,10 @@
     };
 
     // ============================================================================
-    // --- [File: src/components/ConnectionWizard.jsx] (For un-bound devices) ---
+    // --- [File: src/components/ConnectionWizard.jsx] (For un-bound devices / Wi-Fi Reconnect) ---
     // ============================================================================
     const ConnectionWizard = ({ robot, onComplete, onCancel }) => {
       const [step, setStep] = useState('method'); 
-      // 记录选择的网络模式，用于传递给底层屏蔽特定功能
       const [selectedMethod, setSelectedMethod] = useState('wifi'); 
 
       useEffect(() => {
@@ -482,7 +481,6 @@
           return () => clearTimeout(timer);
         }
         if (step === 'success') {
-          // 将配网模式回传，以便在 AP 模式下屏蔽需联网的功能
           const timer = setTimeout(() => onComplete(selectedMethod), 1500);
           return () => clearTimeout(timer);
         }
@@ -520,7 +518,7 @@
                 </div>
 
                 <button onClick={onCancel} className="mt-8 text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1.5 font-bold transition-colors pad-btn">
-                  <i className="fa-solid fa-arrow-left"></i> 返回设备中心
+                  <i className="fa-solid fa-arrow-left"></i> 取消并返回
                 </button>
               </div>
             )}
@@ -624,6 +622,10 @@
     // ============================================================================
     const DeviceCenter = ({ boundRobots, discoveredRobots, onConnect, onBindAndConnect }) => {
       const [connectingId, setConnectingId] = useState(null);
+      const [reconnectPrompt, setReconnectPrompt] = useState(null); // State B 专用重连弹窗
+
+      // 过滤发现的设备：不包含已绑定列表中已存在的SN
+      const filteredDiscovered = discoveredRobots.filter(d => !boundRobots.some(b => b.sn === d.sn));
 
       const handleConnect = (robot) => {
         setConnectingId(robot.id);
@@ -635,6 +637,25 @@
 
       return (
         <div className="w-full h-full flex flex-col p-8 bg-transparent relative animate-[fadeIn_0.3s_ease-in-out]">
+          
+          {/* 重连向导 Modal (针对 State B) */}
+          {reconnectPrompt && (
+            <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center animate-[fadeIn_0.1s_ease-out]">
+              <div className="bg-white rounded-2xl p-8 w-full max-w-sm flex flex-col shadow-2xl text-center items-center">
+                <div className="w-14 h-14 bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center text-2xl mb-4 border border-yellow-100 shadow-sm"><i className="fa-solid fa-link-slash"></i></div>
+                <h2 className="text-lg font-bold text-slate-800 mb-3">网络连接异常</h2>
+                <p className="text-sm text-slate-500 mb-8 leading-relaxed">蓝牙扫描到设备 <strong>{reconnectPrompt.name}</strong> 在附近，但当前网络无法连通。<br/>请重新为其配置并建立连接。</p>
+                <div className="flex w-full gap-3">
+                   <button onClick={() => setReconnectPrompt(null)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl pad-btn transition-colors border border-slate-200">取消</button>
+                   <button onClick={() => { 
+                      onBindAndConnect(reconnectPrompt); 
+                      setReconnectPrompt(null); 
+                   }} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl pad-btn shadow-md transition-colors">重新配置网络</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="max-w-5xl mx-auto w-full flex flex-col h-full gap-8">
             <header className="shrink-0 flex items-center gap-3 border-b border-slate-200 pb-6">
               <div className="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center text-xl shadow-sm"><i className="fa-solid fa-server"></i></div>
@@ -642,45 +663,81 @@
             </header>
 
             <div className="flex-1 flex flex-col min-h-0 gap-8 overflow-y-auto custom-scrollbar pr-2">
-              {/* 我的设备 */}
+              {/* 我的设备 (State A, B, C) */}
               <section>
                 <h2 className="text-sm font-bold text-slate-600 flex items-center gap-2 mb-4"><i className="fa-solid fa-robot"></i> 我的设备 ({boundRobots.length})</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {boundRobots.length === 0 ? <div className="col-span-full py-8 text-center text-sm text-slate-400 bg-white rounded-xl border border-dashed border-slate-300">暂无已绑定的设备</div> : 
-                   boundRobots.map(r => (
-                     <div key={r.id} className={`bg-white p-5 rounded-xl border shadow-sm flex flex-col transition-all ${r.status === 'online' ? 'border-slate-200 hover:border-blue-400' : 'border-slate-200 opacity-60'}`}>
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${r.status === 'online' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'}`}><i className="fa-solid fa-robot"></i></div>
-                            <div>
-                              <div className="font-bold text-slate-800">{r.name}</div>
-                              <div className="text-xs font-mono text-slate-500 mt-0.5">SN: {r.sn}</div>
-                            </div>
-                          </div>
-                          <div className={`w-2.5 h-2.5 rounded-full ${r.status === 'online' ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-slate-300'}`}></div>
-                        </div>
-                        <div className="mt-auto pt-4 border-t border-slate-100">
-                          {r.status === 'online' ? (
-                            <button onClick={() => handleConnect(r)} disabled={connectingId === r.id} className="w-full py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 font-bold text-sm rounded-lg transition-colors pad-btn flex items-center justify-center gap-2">
+                   boundRobots.map(r => {
+                     // 状态机解析渲染
+                     let dotColor = 'bg-slate-300';
+                     let cardBorder = 'border-slate-200 opacity-60';
+                     let iconBg = 'bg-slate-100 text-slate-400';
+                     let actionBtn = null;
+                     let connLabel = '';
+
+                     if (r.status === 'online') {
+                         dotColor = 'bg-green-500 shadow-[0_0_5px_#22c55e]';
+                         cardBorder = 'border-slate-200 hover:border-blue-400 bg-white shadow-sm';
+                         iconBg = 'bg-blue-50 text-blue-600';
+                         connLabel = '网络直连正常';
+                         actionBtn = (
+                            <button onClick={() => handleConnect(r)} disabled={connectingId === r.id} className="w-full py-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200 font-bold text-sm rounded-lg transition-colors pad-btn flex items-center justify-center gap-2">
                               {connectingId === r.id ? <><i className="fa-solid fa-spinner fa-spin"></i> 连接中</> : '进入控制'}
                             </button>
-                          ) : (
-                            <button disabled className="w-full py-2 bg-slate-50 text-slate-400 font-bold text-sm rounded-lg border border-slate-200 cursor-not-allowed">设备离线</button>
-                          )}
-                        </div>
-                     </div>
-                   ))}
+                         );
+                     } else if (r.status === 'network_error') {
+                         dotColor = 'bg-yellow-500 shadow-[0_0_5px_#eab308] animate-pulse';
+                         cardBorder = 'border-yellow-200 bg-yellow-50/40 shadow-sm';
+                         iconBg = 'bg-yellow-100 text-yellow-600';
+                         connLabel = '网络断开，蓝牙在附近';
+                         actionBtn = (
+                            <button onClick={() => setReconnectPrompt(r)} className="w-full py-2.5 bg-white text-yellow-600 hover:bg-yellow-500 hover:text-white border border-yellow-300 font-bold text-sm rounded-lg transition-colors pad-btn flex items-center justify-center gap-2 shadow-sm">
+                              <i className="fa-solid fa-triangle-exclamation"></i> 网络异常 / 去重连
+                            </button>
+                         );
+                     } else {
+                         // offline
+                         connLabel = '设备关机或不在附近';
+                         actionBtn = (
+                            <button disabled className="w-full py-2.5 bg-slate-50 text-slate-400 font-bold text-sm rounded-lg border border-slate-200 cursor-not-allowed">设备离线</button>
+                         );
+                     }
+
+                     return (
+                       <div key={r.id} className={`p-5 rounded-xl border flex flex-col transition-all ${cardBorder}`}>
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${iconBg}`}><i className="fa-solid fa-robot"></i></div>
+                              <div>
+                                <div className="font-bold text-slate-800">{r.name}</div>
+                                <div className="text-xs font-mono text-slate-500 mt-0.5">SN: {r.sn}</div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`}></div>
+                              <span className={`text-[10px] font-bold ${r.status==='online'?'text-green-600':r.status==='network_error'?'text-yellow-600':'text-slate-400'}`}>{connLabel}</span>
+                            </div>
+                          </div>
+                          <div className="mt-auto pt-4 border-t border-slate-200/50">
+                            {actionBtn}
+                          </div>
+                       </div>
+                     );
+                   })}
                 </div>
               </section>
 
-              {/* 发现新设备 */}
+              {/* 发现新设备 (已过滤绑定的机器) */}
               <section>
                 <div className="flex justify-between items-end mb-4">
                   <h2 className="text-sm font-bold text-slate-600 flex items-center gap-2"><i className="fa-brands fa-bluetooth-b text-blue-500"></i> 发现附近设备</h2>
                   <span className="text-xs text-blue-500 flex items-center gap-1 animate-pulse"><i className="fa-solid fa-satellite-dish"></i> 扫描中...</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {discoveredRobots.map(r => (
+                  {filteredDiscovered.length === 0 ? (
+                    <div className="col-span-full py-6 text-center text-xs text-slate-400 border border-transparent">未发现可用的新设备</div>
+                  ) : filteredDiscovered.map(r => (
                     <div key={r.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-8 h-8 bg-white border border-slate-200 rounded flex items-center justify-center text-slate-500"><i className="fa-solid fa-microchip"></i></div>
@@ -1728,14 +1785,15 @@
       const [modals, setModals] = useState({ eStop: false, disconnect: false, modeError: false, pwd: false, devManage: false });
       const [unbindConfirmId, setUnbindConfirmId] = useState(null); // 二次确认解绑状态
 
-      // 模拟数据库数据
+      // 模拟数据库数据: 包含在线(状态A)、异常(状态B)、离线(状态C)的情况
       const [boundRobots, setBoundRobots] = useState([
         { id: 'r1', name: 'NX1-1', sn: '2026-X9-001', status: 'online', connType: 'wifi' },
-        { id: 'r2', name: 'NX1-2', sn: '2026-X9-002', status: 'offline', connType: 'wifi' }
+        { id: 'r2', name: 'NX1-2', sn: '2026-X9-002', status: 'network_error', connType: 'ap' }, // 状态 B
+        { id: 'r3', name: 'NX1-3', sn: '2026-X9-003', status: 'offline', connType: 'wifi' }     // 状态 C
       ]);
       const [discoveredRobots, setDiscoveredRobots] = useState([
-        { id: 'r3', name: 'GALBOT-NX1-3', sn: '2026-X9-003', status: 'unbound' },
-        { id: 'r4', name: 'GALBOT-NX1-4', sn: '2026-X9-004', status: 'locked' }
+        { id: 'r4', name: 'GALBOT-NX1-4', sn: '2026-X9-004', status: 'unbound' },
+        { id: 'r5', name: 'GALBOT-NX1-5', sn: '2026-X9-005', status: 'locked' }
       ]);
 
       const [globalActions, setGlobalActions] = useState([
@@ -1759,16 +1817,28 @@
         setSystemMode('idle'); 
       };
       
-      // 点击绑定并配网 -> 进入配网向导
+      // 点击绑定并配网 或 重新配网 -> 进入配网向导
       const handleStartConfigure = (robot) => { setConfiguringRobot(robot); };
       
       // 配网完成 -> 加入列表并进入控制台
       const handleWizardComplete = (method) => {
-        const newBot = { ...configuringRobot, name: 'NX1-' + (boundRobots.length + 1), status: 'online', connType: method };
-        setBoundRobots([...boundRobots, newBot]);
-        setDiscoveredRobots(discoveredRobots.filter(r => r.id !== configuringRobot.id));
+        // 如果是重连配网，直接更新列表即可
+        const existingIndex = boundRobots.findIndex(r => r.id === configuringRobot.id);
+        let updatedBot;
+        
+        if (existingIndex >= 0) {
+            updatedBot = { ...boundRobots[existingIndex], status: 'online', connType: method };
+            const updatedRobots = [...boundRobots];
+            updatedRobots[existingIndex] = updatedBot;
+            setBoundRobots(updatedRobots);
+        } else {
+            updatedBot = { ...configuringRobot, name: 'NX1-' + (boundRobots.length + 1), status: 'online', connType: method };
+            setBoundRobots([...boundRobots, updatedBot]);
+            setDiscoveredRobots(discoveredRobots.filter(r => r.id !== configuringRobot.id));
+        }
+        
         setConfiguringRobot(null);
-        handleConnectRobot(newBot);
+        handleConnectRobot(updatedBot);
       };
 
       const handleDisconnectConfirm = () => { setActiveRobot(null); setSystemMode('idle'); closeModal('disconnect'); };
@@ -1978,7 +2048,7 @@
                         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10 shadow-sm relative">
                           <h2 className="text-base font-bold text-slate-700 flex items-center gap-2"><span className="text-blue-500">/</span> {activeTab}</h2>
                           <div className="flex items-center gap-4 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-                            {connectionType === 'ap' && <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded text-[10px] font-bold border border-teal-200">AP 直连</span>}
+                            {activeRobot?.connType === 'ap' && <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded text-[10px] font-bold border border-teal-200">AP 直连</span>}
                             <span className="flex items-center gap-1.5"><i className="fa-solid fa-robot text-blue-600"></i> <span className="font-bold">{activeRobot?.name}</span></span>
                             <span className="text-slate-300">|</span>
                             <span className="flex items-center gap-1.5"><i className="fa-solid fa-battery-half text-green-500"></i> <span className="font-mono font-bold">82%</span></span>
@@ -1991,7 +2061,7 @@
                           {activeTab === '控制' && <ControlPanel systemMode={systemMode} onModeChange={handleModeChange} globalActions={globalActions} isConnected={true} />}
                           {activeTab === '感知' && <PerceptionPanel />}
                           {activeTab === '示教' && <TeachingPanel globalActions={globalActions} setGlobalActions={setGlobalActions} />}
-                          {activeTab === '配置' && <ConfigPanel globalActions={globalActions} setGlobalActions={setGlobalActions} connectionType={connectionType} />}
+                          {activeTab === '配置' && <ConfigPanel globalActions={globalActions} setGlobalActions={setGlobalActions} connectionType={activeRobot?.connType || 'wifi'} />}
                         </main>
                       </>
                     )}
